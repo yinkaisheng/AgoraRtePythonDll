@@ -1,4 +1,7 @@
 # Prerequisites
+.vs
+bin*
+temp
 *.d
 
 # Compiled Object files

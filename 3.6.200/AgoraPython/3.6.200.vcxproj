@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>15.0</VCProjectVersion>
+    <ProjectGuid>{5F8E2D2B-01D6-11EC-A2A6-80FA5B6C3241}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>AgoraPython</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="PropertySheet.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="PropertySheet.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="PropertySheet.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="PropertySheet.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IntDir>$(SolutionDir)temp\$(Configuration)_$(PlatformShortName)_$(AgoraSdkVersionStr)\</IntDir>
+    <OutDir>$(SolutionDir)bin$(PlatformShortName)\$(AgoraSdkVersionStr)\</OutDir>
+    <TargetName>AgoraPython</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)bin$(PlatformShortName)\$(AgoraSdkVersionStr)\</OutDir>
+    <IntDir>$(SolutionDir)temp\$(Configuration)_$(PlatformShortName)_$(AgoraSdkVersionStr)\</IntDir>
+    <TargetName>AgoraPython</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <IntDir>$(SolutionDir)temp\$(Configuration)_$(PlatformShortName)_$(AgoraSdkVersionStr)\</IntDir>
+    <OutDir>$(SolutionDir)bin$(PlatformShortName)\$(AgoraSdkVersionStr)\</OutDir>
+    <TargetName>AgoraPython</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)bin$(PlatformShortName)\$(AgoraSdkVersionStr)\</OutDir>
+    <IntDir>$(SolutionDir)temp\$(Configuration)_$(PlatformShortName)_$(AgoraSdkVersionStr)\</IntDir>
+    <TargetName>AgoraPython</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>AGORA_SDK_VERSION=36200000;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\high_level_api\include\;$(SolutionDir)AgoraPython\3rd\;$(SolutionDir)AgoraPython\3rd\json\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\lib$(PlatformShortName)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>agora_rtc_sdk.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>AGORA_SDK_VERSION=36200000;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\high_level_api\include\;$(SolutionDir)AgoraPython\3rd\;$(SolutionDir)AgoraPython\3rd\json\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\lib$(PlatformShortName)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>agora_rtc_sdk.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>AGORA_SDK_VERSION=36200000;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\high_level_api\include\;$(SolutionDir)AgoraPython\3rd\;$(SolutionDir)AgoraPython\3rd\json\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\lib$(PlatformShortName)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>agora_rtc_sdk.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>AGORA_SDK_VERSION=36200000;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\high_level_api\include\;$(SolutionDir)AgoraPython\3rd\;$(SolutionDir)AgoraPython\3rd\json\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\lib$(PlatformShortName)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>agora_rtc_sdk.dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\AgoraPython\3rd\json\json.hpp" />
+    <ClInclude Include="..\..\AgoraPython\3rd\spdlog\async.h" />
+    <ClInclude Include="..\..\AgoraPython\3rd\spdlog\async_logger-inl.h" />
+    <ClInclude Include="..\..\AgoraPython\3rd\spdlog\async_logger.h" />
+    <ClInclude Include="..\..\AgoraPython\3rd\spdlog\common-inl.h" />
+    <ClInclude Include="..\..\AgoraPython\3rd\spdlog\common.h" />
+    <ClInclude Include="..\..\AgoraPython\3rd\spdlog\formatter.h" />
+    <ClInclude Include="..\..\AgoraPython\3rd\spdlog\fwd.h" />
+    <ClInclude Include="..\..\AgoraPython\3rd\spdlog\logger-inl.h" />
+    <ClInclude Include="..\..\AgoraPython\3rd\spdlog\logger.h" />
+    <ClInclude Include="..\..\AgoraPython\3rd\spdlog\pattern_formatter-inl.h" />
+    <ClInclude Include="..\..\AgoraPython\3rd\spdlog\pattern_formatter.h" />
+    <ClInclude Include="..\..\AgoraPython\3rd\spdlog\spdlog-inl.h" />
+    <ClInclude Include="..\..\AgoraPython\3rd\spdlog\spdlog.h" />
+    <ClInclude Include="..\..\AgoraPython\3rd\spdlog\stopwatch.h" />
+    <ClInclude Include="..\..\AgoraPython\3rd\spdlog\tweakme.h" />
+    <ClInclude Include="..\..\AgoraPython\3rd\spdlog\version.h" />
+    <ClInclude Include="..\..\AgoraPython\src\AgoraEventHandler.h" />
+    <ClInclude Include="..\..\AgoraPython\src\AgoraVideoFrameObserver.h" />
+    <ClInclude Include="..\..\AgoraPython\src\util.h" />
+    <ClInclude Include="..\high_level_api\include\AgoraBase.h" />
+    <ClInclude Include="..\high_level_api\include\AgoraMediaBase.h" />
+    <ClInclude Include="..\high_level_api\include\AgoraMediaPlayerTypes.h" />
+    <ClInclude Include="..\high_level_api\include\AgoraOptional.h" />
+    <ClInclude Include="..\high_level_api\include\AgoraRefPtr.h" />
+    <ClInclude Include="..\high_level_api\include\IAgoraLog.h" />
+    <ClInclude Include="..\high_level_api\include\IAgoraMediaComponentFactory.h" />
+    <ClInclude Include="..\high_level_api\include\IAgoraMediaEngine.h" />
+    <ClInclude Include="..\high_level_api\include\IAgoraMediaPlayer.h" />
+    <ClInclude Include="..\high_level_api\include\IAgoraMediaPlayerSource.h" />
+    <ClInclude Include="..\high_level_api\include\IAgoraParameter.h" />
+    <ClInclude Include="..\high_level_api\include\IAgoraRtcEngine.h" />
+    <ClInclude Include="..\high_level_api\include\IAgoraRtcEngineEx.h" />
+    <ClInclude Include="..\high_level_api\include\IAudioDeviceManager.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\AgoraPython\src\AgoraEventHandler.cpp" />
+    <ClCompile Include="..\..\AgoraPython\src\AgoraPython.cpp" />
+    <ClCompile Include="..\..\AgoraPython\src\AgoraVideoFrameObserver.cpp" />
+    <ClCompile Include="..\..\AgoraPython\src\util.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
