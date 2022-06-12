@@ -19,29 +19,6 @@
 
 using namespace nlohmann;
 
-#if (AGORA_SDK_VERSION==36200100 && IS_DEV_36200100) || AGORA_SDK_VERSION>=50000000
-void SnapshotHandler::setEventCallback(AgoraEngineEventCallback callback)
-{
-	mCallback = callback;
-}
-
-void SnapshotHandler::onSnapshotTaken(const char* channel, uid_t uid, const char* filePath, int width, int height, int errCode)
-{
-    CALLBACK_BLOCK_BEGIN
-
-    json js;
-    js["channel"] = channel;
-    js["uid"] = uid;
-    js["filePath"] = filePath;
-    js["width"] = width;
-    js["height"] = height;
-    js["errCode"] = errCode;
-
-    std::string jsonStr = js.dump(4);
-
-	CALLBACK_BLOCK_END
-}
-#endif
 
 void AgoraEventHandler::setEventCallback(AgoraEngineEventCallback callback)
 {
@@ -326,10 +303,16 @@ void AgoraEventHandler::onStreamMessageError(uid_t uid, int streamId, int code, 
     CALLBACK_BLOCK_END
 }
 
-#if AGORA_SDK_VERSION == 36200100 && HAS_AUTO_CORRECT
+#if HAS_AUTO_CORRECT
+#if AGORA_SDK_VERSION >= 36200100 && AGORA_SDK_VERSION <= 36200109
 void AgoraEventHandler::onTrapezoidAutoCorrectionFinished(uid_t uid, TrapezoidAutoCorrectionResult result, int costTime,
     const TrapezoidCorrectionOptions::Point* dragSrcPoints, int dragSrcPointsLen,
     const TrapezoidCorrectionOptions::Point* dragDstPoints, int dragDstPointsLen)
+#else
+void AgoraEventHandler::onTrapezoidAutoCorrectionFinished(uid_t uid, TRAPEZOID_AUTO_CORRECTION_RESULT result, int costTime,
+	const TrapezoidCorrectionOptions::Point* dragSrcPoints, int dragSrcPointsLen,
+	const TrapezoidCorrectionOptions::Point* dragDstPoints, int dragDstPointsLen)
+#endif
 {
 	CALLBACK_BLOCK_BEGIN
 
@@ -356,20 +339,75 @@ void AgoraEventHandler::onTrapezoidAutoCorrectionFinished(uid_t uid, TrapezoidAu
 
 	CALLBACK_BLOCK_END
 }
-#endif
 
-#if (AGORA_SDK_VERSION==36200100 && IS_DEV_36200100) || AGORA_SDK_VERSION>=50000000
-void AgoraEventHandler::onSnapshotTaken(const char* channel, uid_t uid, const char* filePath, int width, int height, int errCode)
+#if AGORA_SDK_VERSION >= 36200100 && AGORA_SDK_VERSION <= 36200109
+void AgoraEventHandler::onTrapezoidAutoCorrectionFinished(const RtcConnection& connection, uid_t uid, TrapezoidAutoCorrectionResult result, int costTime,
+	const TrapezoidCorrectionOptions::Point* dragSrcPoints, int dragSrcPointsLen,
+	const TrapezoidCorrectionOptions::Point* dragDstPoints, int dragDstPointsLen)
+#else
+void AgoraEventHandler::onTrapezoidAutoCorrectionFinished(const RtcConnection& connection, uid_t uid, TRAPEZOID_AUTO_CORRECTION_RESULT result, int costTime,
+	const TrapezoidCorrectionOptions::Point* dragSrcPoints, int dragSrcPointsLen,
+	const TrapezoidCorrectionOptions::Point* dragDstPoints, int dragDstPointsLen)
+#endif
 {
 	CALLBACK_BLOCK_BEGIN
 
 	json js;
-    js["channel"] = channel;
+	js["channel"] = connection.channelId;
+	js["localUid"] = connection.localUid;
+	js["uid"] = uid;
+	js["result"] = result;
+	js["costTime"] = costTime;
+	json jsDragSrcPoints;
+	for (int i = 0; i < dragSrcPointsLen; ++i)
+	{
+		jsDragSrcPoints.push_back(dragSrcPoints[i].x);
+		jsDragSrcPoints.push_back(dragSrcPoints[i].y);
+	}
+	json jsDragDstPoints;
+	for (int i = 0; i < dragDstPointsLen; ++i)
+	{
+		jsDragDstPoints.push_back(dragDstPoints[i].x);
+		jsDragDstPoints.push_back(dragDstPoints[i].y);
+	}
+	js["dragSrcPoints"] = jsDragSrcPoints;
+	js["dragDstPoints"] = jsDragDstPoints;
+
+	std::string jsonStr = js.dump(4);
+
+	CALLBACK_BLOCK_END
+}
+#endif
+
+#if (AGORA_SDK_VERSION==36200104 && IS_DEV_36200104) || AGORA_SDK_VERSION>=50000000
+void AgoraEventHandler::onSnapshotTaken(uid_t uid, const char* filePath, int width, int height, int errCode)
+{
+	CALLBACK_BLOCK_BEGIN
+
+	json js;
 	js["uid"] = uid;
 	js["filePath"] = filePath;
 	js["width"] = width;
     js["height"] = height;
     js["errCode"] = errCode;
+
+	std::string jsonStr = js.dump(4);
+
+	CALLBACK_BLOCK_END
+}
+
+void AgoraEventHandler::onSnapshotTaken(const RtcConnection& connection, uid_t uid, const char* filePath, int width, int height, int errCode)
+{
+	CALLBACK_BLOCK_BEGIN
+
+	json js;
+	js["channel"] = connection.channelId;
+    js["localUid"] = connection.localUid;
+	js["uid"] = uid;
+	js["filePath"] = filePath;
+	js["width"] = width;
+	js["height"] = height;
+	js["errCode"] = errCode;
 
 	std::string jsonStr = js.dump(4);
 

@@ -1,8 +1,9 @@
 ﻿#pragma once
-#include <IAgoraRtcEngine.h>
+#include <IAgoraRtcEngineEx.h>
 #include <list>
 
-#define  HAS_AUTO_CORRECT 1
+//define HAS_AUTO_CORRECT in project
+//#define  HAS_AUTO_CORRECT 1
 
 using namespace agora::rtc;
 
@@ -13,23 +14,7 @@ typedef void (* AgoraEngineEventCallback)(void* pThis, long long callbackTimeSin
 class agora::rtc::IRtcEngine;
 
 
-#if (AGORA_SDK_VERSION==36200100 && IS_DEV_36200100) || AGORA_SDK_VERSION>=50000000
-class SnapshotHandler
-	: public agora::media::ISnapshotCallback
-{
-public:
-	void setEventCallback(AgoraEngineEventCallback callback);
-private:
-	void onSnapshotTaken(const char* channel, uid_t uid, const char* filePath, int width, int height, int errCode) override;
-
-private:
-	AgoraEngineEventCallback mCallback{};
-
-};
-#endif
-
-
-class AgoraEventHandler : public IRtcEngineEventHandler
+class AgoraEventHandler : public IRtcEngineEventHandlerEx
 {
 public:
     void setEventCallback(AgoraEngineEventCallback callback);
@@ -37,7 +22,12 @@ public:
 private:
 
 	void onError(int err, const char* msg) override;
+	
+#if AGORA_SDK_VERSION < 50000000
 	void onWarning(int warn, const char* msg) override;
+#else
+	void onWarning(int warn, const char* msg);
+#endif
 	void onCameraReady() override;
 	void onJoinChannelSuccess(const char* channel, uid_t uid, int elapsed) override;
 	void onUserJoined(uid_t uid, int elapsed) override;
@@ -61,14 +51,24 @@ private:
 #endif
     void onStreamMessageError(uid_t uid, int streamId, int code, int missed, int cached) override;
 
-#if AGORA_SDK_VERSION == 36200100 && HAS_AUTO_CORRECT
+#if HAS_AUTO_CORRECT
+#if AGORA_SDK_VERSION >= 36200100 && AGORA_SDK_VERSION <= 36200109
 	void onTrapezoidAutoCorrectionFinished(uid_t uid, TrapezoidAutoCorrectionResult result, int costTime,
 		const TrapezoidCorrectionOptions::Point* dragSrcPoints, int dragSrcPointsLen,
 		const TrapezoidCorrectionOptions::Point* dragDstPoints, int dragDstPointsLen);
+	void onTrapezoidAutoCorrectionFinished(const RtcConnection& connection, uid_t uid, TrapezoidAutoCorrectionResult result, int costTime,
+		const TrapezoidCorrectionOptions::Point* dragSrcPoints, int dragSrcPointsLen,
+		const TrapezoidCorrectionOptions::Point* dragDstPoints, int dragDstPointsLen);
+#else
+	void onTrapezoidAutoCorrectionFinished(uid_t uid, TRAPEZOID_AUTO_CORRECTION_RESULT result, int costTime,
+		const TrapezoidCorrectionOptions::Point* dragSrcPoints, int dragSrcPointsLen,
+		const TrapezoidCorrectionOptions::Point* dragDstPoints, int dragDstPointsLen);
+#endif
 #endif
 
-#if (AGORA_SDK_VERSION==36200100 && IS_DEV_36200100) || AGORA_SDK_VERSION>=50000000
-	void onSnapshotTaken(const char* channel, uid_t uid, const char* filePath, int width, int height, int errCode) override;
+#if (AGORA_SDK_VERSION==36200104 && IS_DEV_36200104) || AGORA_SDK_VERSION>=50000000
+	void onSnapshotTaken(uid_t uid, const char* filePath, int width, int height, int errCode) override;
+	void onSnapshotTaken(const RtcConnection& connection, uid_t uid, const char* filePath, int width, int height, int errCode) override;
 #endif
 
 #if AGORA_SDK_VERSION>=50000000

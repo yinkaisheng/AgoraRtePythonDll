@@ -1,7 +1,7 @@
-﻿#include <windows.h>
-#include <gdiplus.h>    //do not define WIN32_LEAN_AND_MEAN
-using namespace Gdiplus;
-#pragma comment(lib, "gdiplus.lib")
+﻿//#include <windows.h>
+//#include <gdiplus.h>    //do not define WIN32_LEAN_AND_MEAN
+//using namespace Gdiplus;
+//#pragma comment(lib, "gdiplus.lib")
 
 #include <IAgoraRtcEngineEx.h>
 #include <IAgoraMediaEngine.h>
@@ -27,13 +27,143 @@ using namespace agora::media::base;
 #define AGORA_CAPI extern "C" __declspec(dllexport)
 
 static IAgoraParameter* sAgoraParameter{};
+static IAudioDeviceManager* sAudioDeviceManager{};
 static IVideoDeviceManager* sVideoDeviceManager{};
 static IMediaEngine* sMediaEngine{};
 static AgoraVideoFrameObserver sVideoFrameObserver;
-#if ((AGORA_SDK_VERSION >= 36200100 && AGORA_SDK_VERSION <= 36200109) && IS_DEV_36200100) || AGORA_SDK_VERSION>=50000000
-static SnapshotHandler sSnapshotHandler;
-#endif
 
+class AgoraAudioFrameObserver : public agora::media::IAudioFrameObserver
+{
+public:
+	virtual bool onRecordAudioFrame(AudioFrame& audioFrame)
+	{
+		static unsigned int sCount = 0;
+		++sCount;
+		if (sCount % mLogFrameInterval == 1)
+		{
+			spdlog::info("CPP {}, sCount {}", __FUNCTION__, sCount);
+		}
+		return true;
+	}
+
+	virtual bool onRecordAudioFrame(const char* channelId, AudioFrame& audioFrame)
+	{
+		static unsigned int sCount = 0;
+		++sCount;
+		if (sCount % mLogFrameInterval == 1)
+		{
+			spdlog::info("CPP {}, sCount {}", __FUNCTION__, sCount);
+		}
+		return true;
+	}
+
+	virtual bool onPlaybackAudioFrame(AudioFrame& audioFrame)
+	{
+		static unsigned int sCount = 0;
+		++sCount;
+		if (sCount % mLogFrameInterval == 1)
+		{
+			spdlog::info("CPP {}, sCount {}", __FUNCTION__, sCount);
+		}
+		return true;
+	}
+
+	virtual bool onPlaybackAudioFrame(const char* channelId, AudioFrame& audioFrame)
+	{
+		static unsigned int sCount = 0;
+		++sCount;
+		if (sCount % mLogFrameInterval == 1)
+		{
+			spdlog::info("CPP {}, sCount {}", __FUNCTION__, sCount);
+		}
+		return true;
+	}
+
+	virtual bool onMixedAudioFrame(AudioFrame& audioFrame)
+	{
+		static unsigned int sCount = 0;
+		++sCount;
+		if (sCount % mLogFrameInterval == 1)
+		{
+			spdlog::info("CPP {}, sCount {}", __FUNCTION__, sCount);
+		}
+		return true;
+	}
+
+	virtual bool onMixedAudioFrame(const char* channelId, AudioFrame& audioFrame)
+	{
+		static unsigned int sCount = 0;
+		++sCount;
+		if (sCount % mLogFrameInterval == 1)
+		{
+			spdlog::info("CPP {}, sCount {}", __FUNCTION__, sCount);
+		}
+		return true;
+	}
+
+	virtual bool onEarMonitoringAudioFrame(AudioFrame& audioFrame)
+	{
+		static unsigned int sCount = 0;
+		++sCount;
+		if (sCount % mLogFrameInterval == 1)
+		{
+			spdlog::info("CPP {}, sCount {}", __FUNCTION__, sCount);
+		}
+		return true;
+	}
+
+	virtual bool onPlaybackAudioFrameBeforeMixing(agora::media:: base::user_id_t userId, AudioFrame& audioFrame)
+	{
+		static unsigned int sCount = 0;
+		++sCount;
+		if (sCount % mLogFrameInterval == 1)
+		{
+			spdlog::info("CPP {}, userId {}, sCount {}", __FUNCTION__, userId, sCount);
+		}
+		return true;
+	}
+
+	virtual bool onPlaybackAudioFrameBeforeMixing(const char* channelId, agora::media::base::user_id_t userId, AudioFrame& audioFrame)
+	{
+		static unsigned int sCount = 0;
+		++sCount;
+		if (sCount % mLogFrameInterval == 1)
+		{
+			spdlog::info("CPP {}, c userId {}, sCount {}", __FUNCTION__, userId, sCount);
+		}
+		return true;
+	}
+
+	virtual bool onPlaybackAudioFrameBeforeMixing(rtc::uid_t uid, AudioFrame& audioFrame)
+	{
+		static unsigned int sCount = 0;
+		++sCount;
+		if (sCount % mLogFrameInterval == 1)
+		{
+			spdlog::info("CPP {}, uid {}, sCount {}", __FUNCTION__, uid, sCount);
+		}
+		return true;
+	}
+
+	virtual bool onPlaybackAudioFrameBeforeMixing(const char* channelId, rtc::uid_t uid, AudioFrame& audioFrame)
+	{
+		static unsigned int sCount = 0;
+		++sCount;
+		if (sCount % mLogFrameInterval == 1)
+		{
+			spdlog::info("CPP {}, c uid {}, sCount {}", __FUNCTION__, uid, sCount);
+		}
+		return true;
+	}
+
+private:
+	unsigned int mLogFrameInterval{ 100 };
+};
+
+static AgoraAudioFrameObserver sAudioFrameObserver;
+
+
+/*
 static ULONG_PTR g_nGdiPlusToken = 0;
 AGORA_CAPI void initializeGdiPlus()
 {
@@ -111,6 +241,7 @@ void drawBitmap(Bitmap& bmp)
     graphics.DrawString(wTimeText.c_str(), (int)wTimeText.size(), &font, pt, &textBrush);
     //SaveBitmap(bmp, L"test.png");
 }
+*/
 
 AGORA_CAPI const char* getSdkErrorDescription(int error)
 {
@@ -148,6 +279,12 @@ AGORA_CAPI void release(IRtcEngine* rtcEngine, int sync)
         sMediaEngine = nullptr;
     }
 
+	if (sAudioDeviceManager)
+	{
+		sAudioDeviceManager->release();
+		sAudioDeviceManager = nullptr;
+	}
+
     if (sVideoDeviceManager)
     {
         sVideoDeviceManager->release();
@@ -176,9 +313,6 @@ AGORA_CAPI void setRtcEngineEventCallback(AgoraEventHandler* eventHandler, Agora
     {
         eventHandler->setEventCallback(callback);
     }
-#if ((AGORA_SDK_VERSION >= 36200100 && AGORA_SDK_VERSION <= 36200109) && IS_DEV_36200100) || AGORA_SDK_VERSION>=50000000
-	sSnapshotHandler.setEventCallback(callback);
-#endif
 }
 
 AGORA_CAPI const char* getVersion(IRtcEngine* rtcEngine, int* build)
@@ -913,7 +1047,9 @@ AGORA_CAPI int setupLocalVideo(IRtcEngine* rtcEngine, uid_t uid, void* view, VID
 #if AGORA_SDK_VERSION >= 38200000
 	canvas.setupMode = (VIDEO_VIEW_SETUP_MODE)setupMode;	//VIDEO_VIEW_SETUP_MODE
 	return rtcEngine->setupLocalVideo(canvas);
-#elif (AGORA_SDK_VERSION >= 36200100 && AGORA_SDK_VERSION <= 36200109)
+#elif AGORA_SDK_VERSION >= 36200104 && AGORA_SDK_VERSION <= 36200109
+	return rtcEngine->setupLocalVideo(canvas, (VIDEO_VIEW_SETUP_MODE)setupMode);
+#elif AGORA_SDK_VERSION >= 36200100 && AGORA_SDK_VERSION <= 36200103
 	if (setupMode >= 0)
 	{
 		IRtcEngineEx* rtcEngineEx = static_cast<IRtcEngineEx*>(rtcEngine);
@@ -1642,26 +1778,16 @@ AGORA_CAPI int muteRemoteVideoStream(IRtcEngine* rtcEngine, uid_t uid, int mute,
 #endif
 }
 
-#if (AGORA_SDK_VERSION >= 36200100 && AGORA_SDK_VERSION <= 36200109) && IS_DEV_36200100
-AGORA_CAPI int takeSnapshot(IRtcEngine* rtcEngine, const char* channel, uid_t uid, const char* filePath,
-	float left, float top, float right, float bottom, AgoraEventHandler* eventHandler)
+#if (AGORA_SDK_VERSION >= 36200104 && AGORA_SDK_VERSION <= 36200109) && IS_DEV_36200104
+AGORA_CAPI int takeSnapshot(IRtcEngine* rtcEngine, uid_t uid, const char* filePath,
+	float left, float top, float right, float bottom)
 {
 	if (rtcEngine == nullptr)
 	{
 		return -1;
 	}
 
-	media::SnapShotConfig ssConfig;
-	ssConfig.channel = channel;
-	ssConfig.uid = uid;
-	ssConfig.filePath = filePath;
-	ssConfig.left = left;
-	ssConfig.top = top;
-	ssConfig.right = right;
-	ssConfig.bottom = bottom;
-	media::ISnapshotCallback* callback = &sSnapshotHandler;
-	callback = nullptr;
-	return rtcEngine->takeSnapshot(ssConfig, callback);
+	return rtcEngine->takeSnapshot(uid, filePath, left, top, right, bottom);
 }
 
 AGORA_CAPI int startServerSuperResolution(IRtcEngine* rtcEngine, const char* token, const char* imagePath, float scale, int timeoutSeconds)
@@ -1677,39 +1803,14 @@ AGORA_CAPI int startServerSuperResolution(IRtcEngine* rtcEngine, const char* tok
 #endif
 
 #if AGORA_SDK_VERSION>=50000000
-AGORA_CAPI int takeSnapshot(IRtcEngine* rtcEngine, const char* channel, uid_t uid, const char* filePath, AgoraEventHandler* eventHandler)
+AGORA_CAPI int takeSnapshot(IRtcEngine* rtcEngine, uid_t uid, const char* filePath)
 {
 	if (rtcEngine == nullptr)
 	{
 		return -1;
 	}
 
-	media::SnapShotConfig ssConfig;
-	ssConfig.channel = channel;
-	ssConfig.uid = uid;
-	ssConfig.filePath = filePath;
-	media::ISnapshotCallback* callback = &sSnapshotHandler;
-	callback = nullptr;
-	return rtcEngine->takeSnapshot(ssConfig, callback);
-}
-
-AGORA_CAPI int setContentInspect(IRtcEngine* rtcEngine, int enable, int cloudWork)
-{
-	// agora::media::CONTENT_INSPECT_DEVICE_TYPE deviceWorkType
-	if (rtcEngine == nullptr)
-	{
-		return -1;
-	}
-
-	media::ContentInspectConfig config;
-	config.enable = enable;
-	config.CloudWork = cloudWork;
-	config.DeviceWork = !config.CloudWork;
-	//config.DeviceworkType = deviceWorkType;
-	config.moduleCount = 1;
-	config.modules[0].frequency = 2;
-	config.modules[0].type = agora::media::CONTENT_INSPECT_TYPE::CONTENT_INSPECT_MODERATION;
-	return rtcEngine->SetContentInspect(config);
+	return rtcEngine->takeSnapshot(uid, filePath);
 }
 #endif
 
@@ -1741,28 +1842,27 @@ AGORA_CAPI int sendStreamMessage(IRtcEngine* rtcEngine, int streamId, const char
 #endif
 }
 
-AGORA_CAPI int getVideoDevices(IRtcEngine* rtcEngine, char* szDeviceList, int size)
+#define INIT_VIDEO_DEVICE_MANAGER		\
+	if (rtcEngine == nullptr)			\
+	{									\
+		return -1;						\
+	}									\
+	if (sVideoDeviceManager == nullptr)																				\
+	{																												\
+		INTERFACE_ID_TYPE iid = rtc::AGORA_IID_VIDEO_DEVICE_MANAGER;												\
+		if (rtcEngine->queryInterface(iid, (void**)&sVideoDeviceManager) != 0)										\
+		{																											\
+			spdlog::info("CPP {} rtcEngine {} queryInterface {} failed", __FUNCTION__, fmt::ptr(rtcEngine), iid);	\
+		}																											\
+	}																												\
+	if (sVideoDeviceManager == nullptr)	\
+	{									\
+		return -1;						\
+	}									\
+
+AGORA_CAPI int enumerateVideoDevices(IRtcEngine* rtcEngine, char* szDeviceList, int size)
 {
-    if (rtcEngine == nullptr)
-    {
-        return -1;
-    }
-
-    if (sVideoDeviceManager == nullptr)
-    {
-        INTERFACE_ID_TYPE iid = rtc::AGORA_IID_VIDEO_DEVICE_MANAGER;
-        if (rtcEngine->queryInterface(rtc::AGORA_IID_VIDEO_DEVICE_MANAGER, (void**)&sVideoDeviceManager) != 0)
-        {
-            //failed
-            spdlog::info("CPP {} rtcEngine {} queryInterface {} failed", __FUNCTION__, fmt::ptr(rtcEngine), iid);
-        }
-    }
-
-    if (sVideoDeviceManager == nullptr)
-    {
-        spdlog::info("CPP {} rtcEngine {} VideoDeviceManager is null", __FUNCTION__, fmt::ptr(rtcEngine));
-        return -1;
-    }
+	INIT_VIDEO_DEVICE_MANAGER
 
     std::string deviceInfo;
     deviceInfo.reserve(size);
@@ -1799,88 +1899,23 @@ AGORA_CAPI int getVideoDevices(IRtcEngine* rtcEngine, char* szDeviceList, int si
     return 0;
 }
 
-AGORA_CAPI int getVideoDeviceId(IRtcEngine* rtcEngine, char* szDeviceId, int size)
+AGORA_CAPI int getVideoDevice(IRtcEngine* rtcEngine, char* szDeviceId)
 {
-    if (rtcEngine == nullptr)
-    {
-        return -1;
-    }
+	INIT_VIDEO_DEVICE_MANAGER
 
-    if (sVideoDeviceManager == nullptr)
-    {
-        INTERFACE_ID_TYPE iid = rtc::AGORA_IID_VIDEO_DEVICE_MANAGER;
-        if (rtcEngine->queryInterface(rtc::AGORA_IID_VIDEO_DEVICE_MANAGER, (void**)&sVideoDeviceManager) != 0)
-        {
-            //failed
-            spdlog::info("CPP {} rtcEngine {} queryInterface {} failed", __FUNCTION__, fmt::ptr(rtcEngine), iid);
-        }
-    }
-
-    if (sVideoDeviceManager)
-    {
-        char szDeviceId[MAX_DEVICE_ID_LENGTH]{};
-        int ret = sVideoDeviceManager->getDevice(szDeviceId);
-        if (ret == 0)
-        {
-            std::strncpy(szDeviceId, szDeviceId, size - 1);
-        }
-        else
-        {
-            spdlog::info("CPP {} IVideoDeviceManager {} getDevice returns {}", __FUNCTION__, fmt::ptr(sVideoDeviceManager), ret);
-        }
-        return ret;
-    }
-
-    return -1;
+	return sVideoDeviceManager->getDevice(szDeviceId);
 }
 
-AGORA_CAPI int setVideoDeviceId(IRtcEngine* rtcEngine, const char* deviceId)
+AGORA_CAPI int setVideoDevice(IRtcEngine* rtcEngine, const char* deviceId)
 {
-    if (rtcEngine == nullptr)
-    {
-        return -1;
-    }
+	INIT_VIDEO_DEVICE_MANAGER
 
-    if (sVideoDeviceManager == nullptr)
-    {
-        INTERFACE_ID_TYPE iid = rtc::AGORA_IID_VIDEO_DEVICE_MANAGER;
-        if (rtcEngine->queryInterface(rtc::AGORA_IID_VIDEO_DEVICE_MANAGER, (void**)&sVideoDeviceManager) != 0)
-        {
-            //failed
-            spdlog::info("CPP {} rtcEngine {} queryInterface {} failed", __FUNCTION__, fmt::ptr(rtcEngine), iid);
-        }
-    }
-
-    if (sVideoDeviceManager)
-    {
-        return sVideoDeviceManager->setDevice(deviceId);
-    }
-
-    return -1;
+	return sVideoDeviceManager->setDevice(deviceId);
 }
 
 AGORA_CAPI int getVideoDeviceNumberOfCapabilities(IRtcEngine* rtcEngine, const char* szDeviceId)
 {
-	if (rtcEngine == nullptr)
-	{
-		return -1;
-	}
-
-	if (sVideoDeviceManager == nullptr)
-	{
-		INTERFACE_ID_TYPE iid = rtc::AGORA_IID_VIDEO_DEVICE_MANAGER;
-		if (rtcEngine->queryInterface(rtc::AGORA_IID_VIDEO_DEVICE_MANAGER, (void**)&sVideoDeviceManager) != 0)
-		{
-			//failed
-			spdlog::info("CPP {} rtcEngine {} queryInterface {} failed", __FUNCTION__, fmt::ptr(rtcEngine), iid);
-		}
-	}
-
-	if (sVideoDeviceManager == nullptr)
-	{
-		spdlog::info("CPP {} rtcEngine {} VideoDeviceManager is null", __FUNCTION__, fmt::ptr(rtcEngine));
-		return -1;
-	}
+	INIT_VIDEO_DEVICE_MANAGER
 
 #if AGORA_SDK_VERSION == 37200100 || AGORA_SDK_VERSION >= 40000000
 	return sVideoDeviceManager->numberOfCapabilities(szDeviceId);
@@ -1891,26 +1926,7 @@ AGORA_CAPI int getVideoDeviceNumberOfCapabilities(IRtcEngine* rtcEngine, const c
 
 AGORA_CAPI int getVideoDeviceCapabilities(IRtcEngine* rtcEngine, const char* szDeviceId, char* szCapabilities, int size)
 {
-	if (rtcEngine == nullptr)
-	{
-		return -1;
-	}
-
-	if (sVideoDeviceManager == nullptr)
-	{
-		INTERFACE_ID_TYPE iid = rtc::AGORA_IID_VIDEO_DEVICE_MANAGER;
-		if (rtcEngine->queryInterface(rtc::AGORA_IID_VIDEO_DEVICE_MANAGER, (void**)&sVideoDeviceManager) != 0)
-		{
-			//failed
-			spdlog::info("CPP {} rtcEngine {} queryInterface {} failed", __FUNCTION__, fmt::ptr(rtcEngine), iid);
-		}
-	}
-
-	if (sVideoDeviceManager == nullptr)
-	{
-		spdlog::info("CPP {} rtcEngine {} VideoDeviceManager is null", __FUNCTION__, fmt::ptr(rtcEngine));
-		return -1;
-	}
+	INIT_VIDEO_DEVICE_MANAGER
 
 #if AGORA_SDK_VERSION == 37201100 || AGORA_SDK_VERSION >= 40000000
 	std::string strOutput;
@@ -1978,6 +1994,7 @@ AGORA_CAPI int pushVideoFrame(IRtcEngine* rtcEngine, void* rawData, agora::media
 
 		if (rawData == nullptr)
 		{
+			/*
 			Bitmap bmp(width, height, PixelFormat32bppARGB);
 			drawBitmap(bmp);
 			//SaveBitmap(bmp, L"pushVideoFrame.bmp");
@@ -1996,6 +2013,7 @@ AGORA_CAPI int pushVideoFrame(IRtcEngine* rtcEngine, void* rawData, agora::media
 			bmp.UnlockBits(&bmpData);
 			rawData = uBuf.get();
 			format = agora::media::base::VIDEO_PIXEL_RGBA;
+			*/
 		}
 
 		agora::media::base::ExternalVideoFrame frame;
@@ -2033,6 +2051,7 @@ AGORA_CAPI int pushVideoFrameEx(IRtcEngine* rtcEngine, void* rawData, agora::med
 
 		if (rawData == nullptr)
 		{
+			/*
 			Bitmap bmp(width, height, PixelFormat32bppARGB);
 			drawBitmap(bmp);
 			//SaveBitmap(bmp, L"pushVideoFrame.bmp");
@@ -2051,6 +2070,7 @@ AGORA_CAPI int pushVideoFrameEx(IRtcEngine* rtcEngine, void* rawData, agora::med
 			bmp.UnlockBits(&bmpData);
 			rawData = uBuf.get();
 			format = agora::media::base::VIDEO_PIXEL_RGBA;
+			*/
 		}
 
 		agora::media::base::ExternalVideoFrame frame;
@@ -2072,6 +2092,32 @@ AGORA_CAPI int pushVideoFrameEx(IRtcEngine* rtcEngine, void* rawData, agora::med
 	return -1;
 }
 #endif
+
+AGORA_CAPI int registerAudioFrameObserver(IRtcEngine* rtcEngine)
+{
+	if (rtcEngine == nullptr)
+	{
+		return -1;
+	}
+
+	if (sMediaEngine == nullptr)
+	{
+		if (rtcEngine->queryInterface(rtc::AGORA_IID_MEDIA_ENGINE, (void**)&sMediaEngine) != 0)
+		{
+			//failed
+		}
+	}
+
+	if (sMediaEngine)
+	{
+		rtcEngine->setPlaybackAudioFrameParameters(48000, 2, RAW_AUDIO_FRAME_OP_MODE_READ_ONLY, 1024);
+		rtcEngine->setPlaybackAudioFrameBeforeMixingParameters(2, 48000);
+		rtcEngine->setMixedAudioFrameParameters(48000, 2, 1024);
+		return sMediaEngine->registerAudioFrameObserver(&sAudioFrameObserver);
+	}
+
+	return -1;
+}
 
 AGORA_CAPI int registerVideoFrameObserver(IRtcEngine* rtcEngine)
 {
@@ -2282,5 +2328,170 @@ AGORA_CAPI int getNumberParameter(IRtcEngine* rtcEngine, const char* parameters,
     return -1;
 }
 
+#define INIT_AUDIO_DEVICE_MANAGER		\
+	if (rtcEngine == nullptr)			\
+	{									\
+		return -1;						\
+	}									\
+	if (sAudioDeviceManager == nullptr)																				\
+	{																												\
+		INTERFACE_ID_TYPE iid = rtc::AGORA_IID_AUDIO_DEVICE_MANAGER;												\
+		if (rtcEngine->queryInterface(iid, (void**)&sAudioDeviceManager) != 0)										\
+		{																											\
+			spdlog::info("CPP {} rtcEngine {} queryInterface {} failed", __FUNCTION__, fmt::ptr(rtcEngine), iid);	\
+		}																											\
+	}																												\
+	if (sAudioDeviceManager == nullptr)	\
+	{									\
+		return -1;						\
+	}									\
 
+
+AGORA_CAPI int enumeratePlaybackDevices(IRtcEngine* rtcEngine, char* szDeviceList, int size)
+{
+	INIT_AUDIO_DEVICE_MANAGER
+
+	std::string deviceInfo;
+	deviceInfo.reserve(size);
+	IAudioDeviceCollection* deviceCollection = sAudioDeviceManager->enumeratePlaybackDevices();
+	if (deviceCollection)
+	{
+		int count = deviceCollection->getCount();
+		for (int n = 0; n < count; ++n)
+		{
+			char szDeviceName[MAX_DEVICE_ID_LENGTH]{};
+			char szDeviceId[MAX_DEVICE_ID_LENGTH]{};
+			int ret = deviceCollection->getDevice(n, szDeviceName, szDeviceId);
+			if (ret != 0)
+			{
+				spdlog::info("CPP {} IAudioDeviceCollection {} getDevice returns {}", __FUNCTION__, fmt::ptr(deviceCollection), ret);
+			}
+			deviceInfo += szDeviceName;
+			deviceInfo += "%%";
+			deviceInfo += szDeviceId;
+			if (n < count - 1)
+			{
+				deviceInfo += "||";
+			}
+		}
+		deviceCollection->release();
+		deviceCollection = nullptr;
+	}
+	else
+	{
+		spdlog::info("CPP {} IAudioDeviceManager {} enumeratePlaybackDevices returns null", __FUNCTION__, fmt::ptr(sAudioDeviceManager));
+	}
+	std::strncpy(szDeviceList, deviceInfo.c_str(), size);
+	szDeviceList[size - 1] = '\0';
+	return 0;
+}
+
+AGORA_CAPI int enumerateRecordingDevices(IRtcEngine* rtcEngine, char* szDeviceList, int size)
+{
+	INIT_AUDIO_DEVICE_MANAGER
+
+	std::string deviceInfo;
+	deviceInfo.reserve(size);
+	IAudioDeviceCollection* deviceCollection = sAudioDeviceManager->enumerateRecordingDevices();
+	if (deviceCollection)
+	{
+		int count = deviceCollection->getCount();
+		for (int n = 0; n < count; ++n)
+		{
+			char szDeviceName[MAX_DEVICE_ID_LENGTH]{};
+			char szDeviceId[MAX_DEVICE_ID_LENGTH]{};
+			int ret = deviceCollection->getDevice(n, szDeviceName, szDeviceId);
+			if (ret != 0)
+			{
+				spdlog::info("CPP {} IAudioDeviceCollection {} getDevice returns {}", __FUNCTION__, fmt::ptr(deviceCollection), ret);
+			}
+			deviceInfo += szDeviceName;
+			deviceInfo += "%%";
+			deviceInfo += szDeviceId;
+			if (n < count - 1)
+			{
+				deviceInfo += "||";
+			}
+		}
+		deviceCollection->release();
+		deviceCollection = nullptr;
+	}
+	else
+	{
+		spdlog::info("CPP {} IAudioDeviceManager {} enumerateRecordingDevices returns null", __FUNCTION__, fmt::ptr(sAudioDeviceManager));
+	}
+	std::strncpy(szDeviceList, deviceInfo.c_str(), size);
+	szDeviceList[size - 1] = '\0';
+	return 0;
+}
+
+AGORA_CAPI int setPlaybackDevice(IRtcEngine* rtcEngine, const char* deviceId)
+{
+	INIT_AUDIO_DEVICE_MANAGER
+
+	return sAudioDeviceManager->setPlaybackDevice(deviceId);
+}
+
+AGORA_CAPI int getPlaybackDevice(IRtcEngine* rtcEngine, char* deviceId)
+{
+	INIT_AUDIO_DEVICE_MANAGER
+
+	return sAudioDeviceManager->getPlaybackDevice(deviceId);
+}
+
+AGORA_CAPI int setRecordingDevice(IRtcEngine* rtcEngine, const char* deviceId)
+{
+	INIT_AUDIO_DEVICE_MANAGER
+
+	return sAudioDeviceManager->setRecordingDevice(deviceId);
+}
+
+AGORA_CAPI int getRecordingDevice(IRtcEngine* rtcEngine, char* deviceId)
+{
+	INIT_AUDIO_DEVICE_MANAGER
+
+	return sAudioDeviceManager->getRecordingDevice(deviceId);
+}
+
+AGORA_CAPI int startPlaybackDeviceTest(IRtcEngine* rtcEngine, const char* testAudioFilePath)
+{
+	INIT_AUDIO_DEVICE_MANAGER
+
+	return sAudioDeviceManager->startPlaybackDeviceTest(testAudioFilePath);
+}
+
+AGORA_CAPI int stopPlaybackDeviceTest(IRtcEngine* rtcEngine)
+{
+	INIT_AUDIO_DEVICE_MANAGER
+
+	return sAudioDeviceManager->stopPlaybackDeviceTest();
+}
+
+AGORA_CAPI int startRecordingDeviceTest(IRtcEngine* rtcEngine, int indicationInterval)
+{
+	INIT_AUDIO_DEVICE_MANAGER
+
+	return sAudioDeviceManager->startRecordingDeviceTest(indicationInterval);
+}
+
+AGORA_CAPI int stopRecordingDeviceTest(IRtcEngine* rtcEngine)
+{
+	INIT_AUDIO_DEVICE_MANAGER
+
+	return sAudioDeviceManager->stopRecordingDeviceTest();
+}
+
+AGORA_CAPI int startAudioDeviceLoopbackTest(IRtcEngine* rtcEngine, int indicationInterval)
+{
+	INIT_AUDIO_DEVICE_MANAGER
+
+	return sAudioDeviceManager->startAudioDeviceLoopbackTest(indicationInterval);
+}
+
+AGORA_CAPI int stopAudioDeviceLoopbackTest(IRtcEngine* rtcEngine)
+{
+	INIT_AUDIO_DEVICE_MANAGER
+
+	return sAudioDeviceManager->stopAudioDeviceLoopbackTest();
+}
 
