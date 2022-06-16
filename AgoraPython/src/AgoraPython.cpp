@@ -1029,33 +1029,43 @@ AGORA_CAPI int setVideoEncoderConfigurationEx(IRtcEngine* rtcEngine, const char*
 #endif
 
 AGORA_CAPI int setupLocalVideo(IRtcEngine* rtcEngine, uid_t uid, void* view, VIDEO_MIRROR_MODE_TYPE mirrorMode, RENDER_MODE_TYPE renderMode,
-    VIDEO_SOURCE_TYPE sourceType, int isScreenView, int setupMode)
+	VIDEO_SOURCE_TYPE sourceType, int isScreenView, int setupMode)
 {
-    if (rtcEngine == nullptr)
-    {
-        return -1;
-    }
-    spdlog::info("CPP {} view {} setupMode {}", __FUNCTION__, fmt::ptr(view), setupMode);
-    VideoCanvas canvas;
-    canvas.isScreenView = (bool)isScreenView;
-    canvas.mirrorMode = mirrorMode;
-    canvas.renderMode = renderMode;
-    canvas.uid = uid;
-    canvas.sourceType = sourceType;
-    canvas.view = view;
+	if (rtcEngine == nullptr)
+	{
+		return -1;
+	}
+	spdlog::info("CPP {} view {} setupMode {}", __FUNCTION__, fmt::ptr(view), setupMode);
+	VideoCanvas canvas;
+	canvas.isScreenView = (bool)isScreenView;
+	canvas.mirrorMode = mirrorMode;
+	canvas.renderMode = renderMode;
+	canvas.uid = uid;
+	canvas.sourceType = sourceType;
+	canvas.view = view;
 
 #if AGORA_SDK_VERSION >= 38200000
 	canvas.setupMode = (VIDEO_VIEW_SETUP_MODE)setupMode;	//VIDEO_VIEW_SETUP_MODE
 	return rtcEngine->setupLocalVideo(canvas);
 #elif AGORA_SDK_VERSION >= 36200104 && AGORA_SDK_VERSION <= 36200109
-	return rtcEngine->setupLocalVideo(canvas, (VIDEO_VIEW_SETUP_MODE)setupMode);
+	if (setupMode == -1) //-1 indicates not using setupMode
+	{
+		return rtcEngine->setupLocalVideo(canvas);
+	}
+	else
+	{
+		return rtcEngine->setupLocalVideo(canvas, (VIDEO_VIEW_SETUP_MODE)setupMode);
+	}
 #elif AGORA_SDK_VERSION >= 36200100 && AGORA_SDK_VERSION <= 36200103
-	if (setupMode >= 0)
+	if (setupMode == -1)
+	{
+		return rtcEngine->setupLocalVideo(canvas);
+	}
+	else
 	{
 		IRtcEngineEx* rtcEngineEx = static_cast<IRtcEngineEx*>(rtcEngine);
 		return rtcEngineEx->setupLocalVideoEx(canvas, (VIDEO_VIEW_SETUP_MODE)setupMode);
 	}
-	return rtcEngine->setupLocalVideo(canvas);
 #else
 	return rtcEngine->setupLocalVideo(canvas);
 #endif
@@ -1496,7 +1506,7 @@ AGORA_CAPI int leaveChannel(IRtcEngine* rtcEngine)
 #if AGORA_SDK_VERSION>=36200000
 
 AGORA_CAPI int setupRemoteVideoEx(IRtcEngine* rtcEngine, uid_t uid, void* view, VIDEO_MIRROR_MODE_TYPE mirrorMode,
-	RENDER_MODE_TYPE renderMode, const char* channelId, uid_t locaUid)
+	RENDER_MODE_TYPE renderMode, const char* channelId, uid_t localUid)
 {
 	if (rtcEngine == nullptr)
 	{
@@ -1504,7 +1514,7 @@ AGORA_CAPI int setupRemoteVideoEx(IRtcEngine* rtcEngine, uid_t uid, void* view, 
 	}
 
 	IRtcEngineEx* rtcEngineEx = static_cast<IRtcEngineEx*>(rtcEngine);
-	RtcConnection connt(channelId, locaUid);
+	RtcConnection connt(channelId, localUid);
 
 	spdlog::info("CPP {} uid {} view {}", __FUNCTION__, uid, fmt::ptr(view));
 	VideoCanvas canvas;
@@ -1790,6 +1800,19 @@ AGORA_CAPI int takeSnapshot(IRtcEngine* rtcEngine, uid_t uid, const char* filePa
 	return rtcEngine->takeSnapshot(uid, filePath, left, top, right, bottom);
 }
 
+AGORA_CAPI int takeSnapshotEx(IRtcEngine* rtcEngine, uid_t uid, const char* filePath,
+	float left, float top, float right, float bottom, const char* channelId, uid_t localUid)
+{
+	if (rtcEngine == nullptr)
+	{
+		return -1;
+	}
+	IRtcEngineEx* rtcEngineEx = static_cast<IRtcEngineEx*>(rtcEngine);
+	RtcConnection connt(channelId, localUid);
+
+	return rtcEngineEx->takeSnapshotEx(uid, filePath, left, top, right, bottom, connt);
+}
+
 AGORA_CAPI int startServerSuperResolution(IRtcEngine* rtcEngine, const char* token, const char* imagePath, float scale, int timeoutSeconds)
 {
 	if (rtcEngine == nullptr)
@@ -1802,7 +1825,7 @@ AGORA_CAPI int startServerSuperResolution(IRtcEngine* rtcEngine, const char* tok
 
 #endif
 
-#if AGORA_SDK_VERSION>=50000000
+#if AGORA_SDK_VERSION>=38200000
 AGORA_CAPI int takeSnapshot(IRtcEngine* rtcEngine, uid_t uid, const char* filePath)
 {
 	if (rtcEngine == nullptr)
@@ -1911,6 +1934,20 @@ AGORA_CAPI int setVideoDevice(IRtcEngine* rtcEngine, const char* deviceId)
 	INIT_VIDEO_DEVICE_MANAGER
 
 	return sVideoDeviceManager->setDevice(deviceId);
+}
+
+AGORA_CAPI int startVideoDeviceTest(IRtcEngine* rtcEngine, void* hwnd)
+{
+	INIT_VIDEO_DEVICE_MANAGER
+
+	return sVideoDeviceManager->startDeviceTest(hwnd);
+}
+
+AGORA_CAPI int stopVideoDeviceTest(IRtcEngine* rtcEngine)
+{
+	INIT_VIDEO_DEVICE_MANAGER
+
+	return sVideoDeviceManager->stopDeviceTest();
 }
 
 AGORA_CAPI int getVideoDeviceNumberOfCapabilities(IRtcEngine* rtcEngine, const char* szDeviceId)

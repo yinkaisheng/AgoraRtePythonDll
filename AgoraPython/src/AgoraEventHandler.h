@@ -14,7 +14,7 @@ typedef void (* AgoraEngineEventCallback)(void* pThis, long long callbackTimeSin
 class agora::rtc::IRtcEngine;
 
 
-class AgoraEventHandler : public IRtcEngineEventHandlerEx
+class AgoraEventHandler : public IRtcEngineEventHandler
 {
 public:
     void setEventCallback(AgoraEngineEventCallback callback);
@@ -53,30 +53,30 @@ private:
 
 #if HAS_AUTO_CORRECT
 #if AGORA_SDK_VERSION >= 36200100 && AGORA_SDK_VERSION <= 36200109
-	void onTrapezoidAutoCorrectionFinished(uid_t uid, TrapezoidAutoCorrectionResult result, int costTime,
+	virtual void onTrapezoidAutoCorrectionFinished(uid_t uid, TrapezoidAutoCorrectionResult result, int costTime,
 		const TrapezoidCorrectionOptions::Point* dragSrcPoints, int dragSrcPointsLen,
 		const TrapezoidCorrectionOptions::Point* dragDstPoints, int dragDstPointsLen);
-	void onTrapezoidAutoCorrectionFinished(const RtcConnection& connection, uid_t uid, TrapezoidAutoCorrectionResult result, int costTime,
+	virtual void onTrapezoidAutoCorrectionFinished(const RtcConnection& connection, uid_t uid, TrapezoidAutoCorrectionResult result, int costTime,
 		const TrapezoidCorrectionOptions::Point* dragSrcPoints, int dragSrcPointsLen,
 		const TrapezoidCorrectionOptions::Point* dragDstPoints, int dragDstPointsLen);
 #else
-	void onTrapezoidAutoCorrectionFinished(uid_t uid, TRAPEZOID_AUTO_CORRECTION_RESULT result, int costTime,
+	virtual void onTrapezoidAutoCorrectionFinished(uid_t uid, TRAPEZOID_AUTO_CORRECTION_RESULT result, int costTime,
 		const TrapezoidCorrectionOptions::Point* dragSrcPoints, int dragSrcPointsLen,
 		const TrapezoidCorrectionOptions::Point* dragDstPoints, int dragDstPointsLen);
 #endif
 #endif
 
-#if (AGORA_SDK_VERSION==36200104 && IS_DEV_36200104) || AGORA_SDK_VERSION>=50000000
+#if (AGORA_SDK_VERSION >= 36200104 && AGORA_SDK_VERSION <= 36200109) || AGORA_SDK_VERSION>=38200000
 	void onSnapshotTaken(uid_t uid, const char* filePath, int width, int height, int errCode) override;
-	void onSnapshotTaken(const RtcConnection& connection, uid_t uid, const char* filePath, int width, int height, int errCode) override;
+	virtual void onSnapshotTaken(const RtcConnection& connection, uid_t uid, const char* filePath, int width, int height, int errCode);
 #endif
 
-#if AGORA_SDK_VERSION>=50000000
+#if AGORA_SDK_VERSION>=38200000
 	void onContentInspectResult(agora::media::CONTENT_INSPECT_RESULT result) override;
 #endif
 
-#if AGORA_SDK_VERSION==36200100 && IS_DEV_36200100
-	void onServerSuperResolutionResult(int httpStatusCode, const char* imageData, int imageSize, int width, int height, const char* reason) override;
+#if (AGORA_SDK_VERSION >= 36200104 && AGORA_SDK_VERSION <= 36200109) && IS_DEV_36200104
+	void onServerSuperResolutionResult(int httpStatusCode, int errCode, const char* errReason, const char* imageData, int imageSize, int width, int height) override;
 #endif
 
 private:

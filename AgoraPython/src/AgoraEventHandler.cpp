@@ -379,7 +379,7 @@ void AgoraEventHandler::onTrapezoidAutoCorrectionFinished(const RtcConnection& c
 }
 #endif
 
-#if (AGORA_SDK_VERSION==36200104 && IS_DEV_36200104) || AGORA_SDK_VERSION>=50000000
+#if (AGORA_SDK_VERSION >= 36200104 && AGORA_SDK_VERSION <= 36200109) || AGORA_SDK_VERSION>=38200000
 void AgoraEventHandler::onSnapshotTaken(uid_t uid, const char* filePath, int width, int height, int errCode)
 {
 	CALLBACK_BLOCK_BEGIN
@@ -415,7 +415,7 @@ void AgoraEventHandler::onSnapshotTaken(const RtcConnection& connection, uid_t u
 }
 #endif
 
-#if AGORA_SDK_VERSION>=50000000
+#if AGORA_SDK_VERSION>=38200000
 void AgoraEventHandler::onContentInspectResult(agora::media::CONTENT_INSPECT_RESULT result)
 {
 	CALLBACK_BLOCK_BEGIN
@@ -429,16 +429,16 @@ void AgoraEventHandler::onContentInspectResult(agora::media::CONTENT_INSPECT_RES
 }
 #endif
 
-#if AGORA_SDK_VERSION==36200100 && IS_DEV_36200100
-void AgoraEventHandler::onServerSuperResolutionResult(int httpStatusCode, const char* imageData, int imageSize,
-    int width, int height, const char* reason)
+#if (AGORA_SDK_VERSION >= 36200104 && AGORA_SDK_VERSION <= 36200109) && IS_DEV_36200104
+void AgoraEventHandler::onServerSuperResolutionResult(int httpStatusCode, int errCode, const char* errReason,
+	const char* imageData, int imageSize, int width, int height)
 {
     CALLBACK_BLOCK_BEGIN
 
     std::string imagePath;
     if (imageData && imageSize > 0)
     {
-        imagePath = "server-image.jpg";
+        imagePath = "server-sr-image.jpg";
         FILE* pFile = fopen(imagePath.c_str(), "wb");
         if (pFile)
         {
@@ -450,10 +450,11 @@ void AgoraEventHandler::onServerSuperResolutionResult(int httpStatusCode, const 
 
 	json js;
 	js["httpStatusCode"] = httpStatusCode;
-    js["imagePath"] = imagePath;
+	js["errCode"] = errCode;
+	js["errReason"] = errReason;
+	js["imagePath"] = imagePath;
 	js["width"] = width;
 	js["height"] = height;
-	js["reason"] = reason;
 
 	std::string jsonStr = js.dump(4);
 
