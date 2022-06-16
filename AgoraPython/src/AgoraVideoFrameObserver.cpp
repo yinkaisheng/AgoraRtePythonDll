@@ -3,26 +3,50 @@
 
 void AgoraVideoFrameObserver::saveCaptureVideoFrame(bool save, unsigned int maxFrames)
 {
-	mSaveCaptureVideoFrame = save;
-	mSaveCaptureVideoFrameCount = maxFrames;
+	mCapture1.saveFrame = save;
+	mCapture1.saveFrameCount = maxFrames;
 }
 
 void AgoraVideoFrameObserver::resetCaptureVideoFrame()
 {
-	mCaptureVideoFrameCount = 0;
-	mSaveCaptureVideoFrameFileNo = 0;
+	mCapture1.frameCount = 0;
+	mCapture1.saveFrameFileNo = 0;
 }
 
 void AgoraVideoFrameObserver::saveSecondaryCaptureVideoFrame(bool save, unsigned int maxFrames)
 {
-	mSaveSecondaryCaptureVideoFrame = save;
-	mSaveSecondaryCaptureVideoFrameCount = maxFrames;
+	mCapture2.saveFrame = save;
+	mCapture2.saveFrameCount = maxFrames;
 }
 
 void AgoraVideoFrameObserver::resetSecondaryCaptureVideoFrame()
 {
-	mSecondaryCaptureVideoFrameCount = 0;
-	mSaveSecondaryCaptureVideoFrameFileNo = 0;
+	mCapture2.frameCount = 0;
+	mCapture2.saveFrameFileNo = 0;
+}
+
+void AgoraVideoFrameObserver::saveScreenVideoFrame(bool save, unsigned int maxFrames)
+{
+	mScreen1.saveFrame = save;
+	mScreen1.saveFrameCount = maxFrames;
+}
+
+void AgoraVideoFrameObserver::resetScreenVideoFrame()
+{
+	mScreen1.frameCount = 0;
+	mScreen1.saveFrameFileNo = 0;
+}
+
+void AgoraVideoFrameObserver::saveSecondaryScreenVideoFrame(bool save, unsigned int maxFrames)
+{
+	mScreen2.saveFrame = save;
+	mScreen2.saveFrameCount = maxFrames;
+}
+
+void AgoraVideoFrameObserver::resetSecondaryScreenVideoFrame()
+{
+	mScreen2.frameCount = 0;
+	mScreen2.saveFrameFileNo = 0;
 }
 
 void AgoraVideoFrameObserver::saveRenderVideoFrame(bool save, unsigned int maxFrames)
@@ -35,6 +59,14 @@ void AgoraVideoFrameObserver::resetRenderVideoFrame()
 {
 	mRenderVideoFrameCount.clear();
 	mSaveRenderVideoFrameFileNo.clear();
+}
+
+void AgoraVideoFrameObserver::resetAllStats()
+{
+	mCapture1.reset();
+	mCapture2.reset();
+	mScreen1.reset();
+	mScreen2.reset();
 }
 
 void AgoraVideoFrameObserver::saveYuv(VideoFrame& videoFrame, const char* fileName, const char* mode)
@@ -96,41 +128,41 @@ void AgoraVideoFrameObserver::saveYuv(VideoFrame& videoFrame, const char* fileNa
 
 bool AgoraVideoFrameObserver::onCaptureVideoFrame(VideoFrame& videoFrame)
 {
-	++mCaptureVideoFrameCount;
-	if (mCaptureVideoFrameCount == 1)
+	++mCapture1.frameCount;
+	if (mCapture1.frameCount == 1)
 	{
-		mFirstCaptureVideoFrameTick = std::chrono::steady_clock::now();
-		mFirstCaptureSeconds = 0;
-		mCaptureVideoFrameCountLast = mCaptureVideoFrameCount;
+		mCapture1.firstFrameTick = std::chrono::steady_clock::now();
+		mCapture1.elapsedSeconds = 0;
+		mCapture1.frameCountLast = mCapture1.frameCount;
 		spdlog::info("CPP onCaptureVideoFrame {} * {} format {} frame count {}",
-			videoFrame.width, videoFrame.height, videoFrame.type, mCaptureVideoFrameCount);
+			videoFrame.width, videoFrame.height, videoFrame.type, mCapture1.frameCount);
 	}
 	else
 	{
 		auto now = std::chrono::steady_clock::now();
-		std::chrono::duration<double> elapsed = now - mFirstCaptureVideoFrameTick;
+		std::chrono::duration<double> elapsed = now - mCapture1.firstFrameTick;
 		double seconds = elapsed.count();
-		if (seconds >= mFirstCaptureSeconds + 1.0)
+		if (seconds >= mCapture1.elapsedSeconds + 1.0)
 		{
-			mFirstCaptureSeconds = (int)seconds;
-			unsigned fps = mCaptureVideoFrameCount - mCaptureVideoFrameCountLast;
-			mCaptureVideoFrameCountLast = mCaptureVideoFrameCount;
+			mCapture1.elapsedSeconds = (int)seconds;
+			unsigned fps = mCapture1.frameCount - mCapture1.frameCountLast;
+			mCapture1.frameCountLast = mCapture1.frameCount;
 			spdlog::info("CPP onCaptureVideoFrame {} * {} format {} frame count {} fps {}",
-				videoFrame.width, videoFrame.height, videoFrame.type, mCaptureVideoFrameCount, fps);
+				videoFrame.width, videoFrame.height, videoFrame.type, mCapture1.frameCount, fps);
 		}
 	}
 
-	if (mSaveCaptureVideoFrame)
+	if (mCapture1.saveFrame)
 	{
 		std::string fileMode{ "ab+" };
-		if (mCaptureVideoFrameCount % mSaveCaptureVideoFrameCount == 1)
+		if (mCapture1.frameCount % mCapture1.saveFrameCount == 1)
 		{
 			fileMode = "wb";
-			mSaveCaptureVideoFrameFileNo = (mSaveCaptureVideoFrameFileNo + 1) % 2;
+			mCapture1.saveFrameFileNo = (mCapture1.saveFrameFileNo + 1) % 2;
 		}
 		char szFile[128]{};
 		std::snprintf(szFile, std::size(szFile), "onCaptureVideoFrame_%u_%dx%d_r%d.yuv",
-			mSaveCaptureVideoFrameFileNo, videoFrame.width, videoFrame.height, videoFrame.rotation);
+			mCapture1.saveFrameFileNo, videoFrame.width, videoFrame.height, videoFrame.rotation);
 		saveYuv(videoFrame, szFile, fileMode.c_str());
 	}
 	return true;
@@ -143,41 +175,41 @@ bool AgoraVideoFrameObserver::onPreEncodeVideoFrame(VideoFrame& videoFrame)
 
 bool AgoraVideoFrameObserver::onSecondaryCameraCaptureVideoFrame(VideoFrame& videoFrame)
 {
-	++mSecondaryCaptureVideoFrameCount;
-	if (mSecondaryCaptureVideoFrameCount == 1)
+	++mCapture2.frameCount;
+	if (mCapture2.frameCount == 1)
 	{
-		mSecondaryCaptureVideoFrameTick = std::chrono::steady_clock::now();
-		mSecondaryCaptureSeconds = 0;
-		mSecondaryCaptureVideoFrameCountLast = mSecondaryCaptureVideoFrameCount;
+		mCapture2.firstFrameTick = std::chrono::steady_clock::now();
+		mCapture2.elapsedSeconds = 0;
+		mCapture2.frameCountLast = mCapture2.frameCount;
 		spdlog::info("CPP onSecondaryCameraCaptureVideoFrame {} * {} format {} frame count {}",
-			videoFrame.width, videoFrame.height, videoFrame.type, mCaptureVideoFrameCount);
+			videoFrame.width, videoFrame.height, videoFrame.type, mCapture2.frameCount);
 	}
 	else
 	{
 		auto now = std::chrono::steady_clock::now();
-		std::chrono::duration<double> elapsed = now - mSecondaryCaptureVideoFrameTick;
+		std::chrono::duration<double> elapsed = now - mCapture2.firstFrameTick;
 		double seconds = elapsed.count();
-		if (seconds >= mSecondaryCaptureSeconds + 1.0)
+		if (seconds >= mCapture2.elapsedSeconds + 1.0)
 		{
-			mSecondaryCaptureSeconds = (int)seconds;
-			unsigned fps = mSecondaryCaptureVideoFrameCount - mSecondaryCaptureVideoFrameCountLast;
-			mSecondaryCaptureVideoFrameCountLast = mSecondaryCaptureVideoFrameCount;
+			mCapture2.elapsedSeconds = (int)seconds;
+			unsigned fps = mCapture2.frameCount - mCapture2.frameCountLast;
+			mCapture2.frameCountLast = mCapture2.frameCount;
 			spdlog::info("CPP onSecondaryCameraCaptureVideoFrame {} * {} format {} frame count {} fps {}",
-				videoFrame.width, videoFrame.height, videoFrame.type, mCaptureVideoFrameCount, fps);
+				videoFrame.width, videoFrame.height, videoFrame.type, mCapture2.frameCount, fps);
 		}
 	}
 
-	if (mSaveSecondaryCaptureVideoFrame)
+	if (mCapture2.saveFrame)
 	{
 		std::string fileMode{ "ab+" };
-		if (mSecondaryCaptureVideoFrameCount % mSaveSecondaryCaptureVideoFrameCount == 1)
+		if (mCapture2.frameCount % mCapture2.saveFrameCount == 1)
 		{
 			fileMode = "wb";
-			mSaveSecondaryCaptureVideoFrameFileNo = (mSaveSecondaryCaptureVideoFrameFileNo + 1) % 2;
+			mCapture2.saveFrameFileNo = (mCapture2.saveFrameFileNo + 1) % 2;
 		}
 		char szFile[128]{};
-		std::snprintf(szFile, std::size(szFile), "onSecondaryCaptureVideoFrame_%u_%dx%d_r%d.yuv",
-			mSaveSecondaryCaptureVideoFrameFileNo, videoFrame.width, videoFrame.height, videoFrame.rotation);
+		std::snprintf(szFile, std::size(szFile), "onSecondaryCameraCaptureVideoFrame_%u_%dx%d_r%d.yuv",
+			mCapture2.saveFrameFileNo, videoFrame.width, videoFrame.height, videoFrame.rotation);
 		saveYuv(videoFrame, szFile, fileMode.c_str());
 	}
 	return true;
@@ -190,6 +222,43 @@ bool AgoraVideoFrameObserver::onSecondaryPreEncodeCameraVideoFrame(VideoFrame& v
 
 bool AgoraVideoFrameObserver::onScreenCaptureVideoFrame(VideoFrame& videoFrame)
 {
+	++mScreen1.frameCount;
+	if (mScreen1.frameCount == 1)
+	{
+		mScreen1.firstFrameTick = std::chrono::steady_clock::now();
+		mScreen1.elapsedSeconds = 0;
+		mScreen1.frameCountLast = mScreen1.frameCount;
+		spdlog::info("CPP onScreenCaptureVideoFrame {} * {} format {} frame count {}",
+			videoFrame.width, videoFrame.height, videoFrame.type, mScreen1.frameCount);
+	}
+	else
+	{
+		auto now = std::chrono::steady_clock::now();
+		std::chrono::duration<double> elapsed = now - mScreen1.firstFrameTick;
+		double seconds = elapsed.count();
+		if (seconds >= mScreen1.elapsedSeconds + 1.0)
+		{
+			mScreen1.elapsedSeconds = (int)seconds;
+			unsigned fps = mScreen1.frameCount - mScreen1.frameCountLast;
+			mScreen1.frameCountLast = mScreen1.frameCount;
+			spdlog::info("CPP onScreenCaptureVideoFrame {} * {} format {} frame count {} fps {}",
+				videoFrame.width, videoFrame.height, videoFrame.type, mScreen1.frameCount, fps);
+		}
+	}
+
+	if (mScreen1.saveFrame)
+	{
+		std::string fileMode{ "ab+" };
+		if (mScreen1.frameCount % mScreen1.saveFrameCount == 1)
+		{
+			fileMode = "wb";
+			mScreen1.saveFrameFileNo = (mScreen1.saveFrameFileNo + 1) % 2;
+		}
+		char szFile[128]{};
+		std::snprintf(szFile, std::size(szFile), "onScreenCaptureVideoFrame_%u_%dx%d_r%d.yuv",
+			mScreen1.saveFrameFileNo, videoFrame.width, videoFrame.height, videoFrame.rotation);
+		saveYuv(videoFrame, szFile, fileMode.c_str());
+	}
 	return true;
 }
 
@@ -205,6 +274,43 @@ bool AgoraVideoFrameObserver::onMediaPlayerVideoFrame(VideoFrame& videoFrame, in
 
 bool AgoraVideoFrameObserver::onSecondaryScreenCaptureVideoFrame(VideoFrame& videoFrame)
 {
+	++mScreen2.frameCount;
+	if (mScreen2.frameCount == 1)
+	{
+		mScreen2.firstFrameTick = std::chrono::steady_clock::now();
+		mScreen2.elapsedSeconds = 0;
+		mScreen2.frameCountLast = mScreen2.frameCount;
+		spdlog::info("CPP onScreenCaptureVideoFrame {} * {} format {} frame count {}",
+			videoFrame.width, videoFrame.height, videoFrame.type, mScreen2.frameCount);
+	}
+	else
+	{
+		auto now = std::chrono::steady_clock::now();
+		std::chrono::duration<double> elapsed = now - mScreen2.firstFrameTick;
+		double seconds = elapsed.count();
+		if (seconds >= mScreen2.elapsedSeconds + 1.0)
+		{
+			mScreen2.elapsedSeconds = (int)seconds;
+			unsigned fps = mScreen2.frameCount - mScreen2.frameCountLast;
+			mScreen2.frameCountLast = mScreen2.frameCount;
+			spdlog::info("CPP onScreenCaptureVideoFrame {} * {} format {} frame count {} fps {}",
+				videoFrame.width, videoFrame.height, videoFrame.type, mScreen2.frameCount, fps);
+		}
+	}
+
+	if (mScreen2.saveFrame)
+	{
+		std::string fileMode{ "ab+" };
+		if (mScreen2.frameCount % mScreen2.saveFrameCount == 1)
+		{
+			fileMode = "wb";
+			mScreen2.saveFrameFileNo = (mScreen2.saveFrameFileNo + 1) % 2;
+		}
+		char szFile[128]{};
+		std::snprintf(szFile, std::size(szFile), "onScreenCaptureVideoFrame_%u_%dx%d_r%d.yuv",
+			mScreen2.saveFrameFileNo, videoFrame.width, videoFrame.height, videoFrame.rotation);
+		saveYuv(videoFrame, szFile, fileMode.c_str());
+	}
 	return true;
 }
 

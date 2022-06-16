@@ -7,6 +7,28 @@
 using namespace agora::media;
 using namespace agora::rtc;
 
+struct FrameStats
+{
+	unsigned int frameCount{};
+	unsigned int frameCountLast{};
+	std::chrono::steady_clock::time_point firstFrameTick{};
+	unsigned int elapsedSeconds{};
+	bool saveFrame{};
+	unsigned saveFrameFileNo{};
+	unsigned saveFrameCount{ 100 };
+
+	void reset()
+	{
+		frameCount = 0;
+		frameCountLast = 0;
+		//firstFrameTick ;
+		elapsedSeconds = 0;
+		//saveFrame = false;
+		saveFrameFileNo = 0;
+		saveFrameCount = 100;
+	}
+};
+
 class AgoraVideoFrameObserver : public agora::media::IVideoFrameObserver
 {
 public:
@@ -43,27 +65,21 @@ public:
 	void resetCaptureVideoFrame();
 	void saveSecondaryCaptureVideoFrame(bool save, unsigned int maxFrames);
 	void resetSecondaryCaptureVideoFrame();
+	void saveScreenVideoFrame(bool save, unsigned int maxFrames);
+	void resetScreenVideoFrame();
+	void saveSecondaryScreenVideoFrame(bool save, unsigned int maxFrames);
+	void resetSecondaryScreenVideoFrame();
 	void saveRenderVideoFrame(bool save, unsigned int maxFrames);
 	void resetRenderVideoFrame();
+	void resetAllStats();
 
 private:
 	void saveYuv(VideoFrame& videoFrame, const char* fileName, const char* mode = "ab+");
 
-	unsigned int mCaptureVideoFrameCount{};
-	unsigned int mCaptureVideoFrameCountLast{};
-	std::chrono::steady_clock::time_point mFirstCaptureVideoFrameTick{};
-	unsigned int mFirstCaptureSeconds{};
-	bool mSaveCaptureVideoFrame{};
-	unsigned mSaveCaptureVideoFrameFileNo{};
-	unsigned mSaveCaptureVideoFrameCount{ 100 };
-
-	unsigned int mSecondaryCaptureVideoFrameCount{};
-	unsigned int mSecondaryCaptureVideoFrameCountLast{};
-	std::chrono::steady_clock::time_point mSecondaryCaptureVideoFrameTick{};
-	unsigned int mSecondaryCaptureSeconds{};
-	bool mSaveSecondaryCaptureVideoFrame{};
-	unsigned mSaveSecondaryCaptureVideoFrameFileNo{};
-	unsigned mSaveSecondaryCaptureVideoFrameCount{ 100 };
+	FrameStats mCapture1;
+	FrameStats mCapture2;
+	FrameStats mScreen1;
+	FrameStats mScreen2;
 
 	//unsigned long mRenderVideoFrameCount{};
 	//std::chrono::steady_clock::time_point mFirstCaptureVideoFrameTick{};

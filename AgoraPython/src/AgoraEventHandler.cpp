@@ -380,6 +380,23 @@ void AgoraEventHandler::onTrapezoidAutoCorrectionFinished(const RtcConnection& c
 #endif
 
 #if (AGORA_SDK_VERSION >= 36200104 && AGORA_SDK_VERSION <= 36200109) || AGORA_SDK_VERSION>=38200000
+void AgoraEventHandler::onSnapshotTaken(const char* channel, uid_t uid, const char* filePath, int width, int height, int errCode)
+{
+	CALLBACK_BLOCK_BEGIN
+
+	json js;
+	js["channel"] = channel;
+	js["uid"] = uid;
+	js["filePath"] = filePath;
+	js["width"] = width;
+	js["height"] = height;
+	js["errCode"] = errCode;
+
+	std::string jsonStr = js.dump(4);
+
+	CALLBACK_BLOCK_END
+}
+
 void AgoraEventHandler::onSnapshotTaken(uid_t uid, const char* filePath, int width, int height, int errCode)
 {
 	CALLBACK_BLOCK_BEGIN

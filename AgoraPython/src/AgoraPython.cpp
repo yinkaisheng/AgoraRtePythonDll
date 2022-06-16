@@ -293,6 +293,8 @@ AGORA_CAPI void release(IRtcEngine* rtcEngine, int sync)
 
     rtcEngine->release(sync);
     spdlog::info("CPP {} {} released", __FUNCTION__, fmt::ptr(rtcEngine));
+
+	sVideoFrameObserver.resetAllStats();
 }
 
 AGORA_CAPI AgoraEventHandler* createRtcEngineEventHandler()
@@ -341,6 +343,9 @@ AGORA_CAPI int initialize(IRtcEngine* rtcEngine, const char* appId, int areaCode
     {
         return -1;
     }
+
+	sVideoFrameObserver.resetAllStats();
+
     RtcEngineContext context;
     context.appId = appId;
     context.areaCode = areaCode;
@@ -1045,7 +1050,10 @@ AGORA_CAPI int setupLocalVideo(IRtcEngine* rtcEngine, uid_t uid, void* view, VID
 	canvas.view = view;
 
 #if AGORA_SDK_VERSION >= 38200000
-	canvas.setupMode = (VIDEO_VIEW_SETUP_MODE)setupMode;	//VIDEO_VIEW_SETUP_MODE
+	if (setupMode >= 0)
+	{
+		canvas.setupMode = (VIDEO_VIEW_SETUP_MODE)setupMode;	//VIDEO_VIEW_SETUP_MODE
+	}
 	return rtcEngine->setupLocalVideo(canvas);
 #elif AGORA_SDK_VERSION >= 36200104 && AGORA_SDK_VERSION <= 36200109
 	if (setupMode == -1) //-1 indicates not using setupMode

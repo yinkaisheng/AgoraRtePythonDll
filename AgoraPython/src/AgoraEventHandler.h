@@ -67,7 +67,9 @@ private:
 #endif
 
 #if (AGORA_SDK_VERSION >= 36200104 && AGORA_SDK_VERSION <= 36200109) || AGORA_SDK_VERSION>=38200000
-	void onSnapshotTaken(uid_t uid, const char* filePath, int width, int height, int errCode) override;
+	virtual void onSnapshotTaken(const char* channel, uid_t uid, const char* filePath, int width, int height, int errCode);//old, later version delete channel
+	virtual void onSnapshotTaken(uid_t uid, const char* filePath, int width, int height, int errCode);//new
+
 	virtual void onSnapshotTaken(const RtcConnection& connection, uid_t uid, const char* filePath, int width, int height, int errCode);
 #endif
 
