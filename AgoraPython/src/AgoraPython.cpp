@@ -156,6 +156,41 @@ public:
 		return true;
 	}
 
+#if AGORA_SDK_VERSION >= 50000000
+	virtual int getObservedAudioFramePosition()
+	{
+		return agora::media::IAudioFrameObserverBase::AUDIO_FRAME_POSITION::AUDIO_FRAME_POSITION_BEFORE_MIXING;
+	}
+
+	virtual AudioParams getPlaybackAudioParams()
+	{
+		static AudioParams params;
+		params.sample_rate = 48000;
+		params.channels = 2;
+		params.samples_per_call = 480;
+		return params;
+	}
+
+	virtual AudioParams getRecordAudioParams()
+	{
+		static AudioParams params;
+		params.sample_rate = 48000;
+		params.channels = 2;
+		params.samples_per_call = 480;
+		return params;
+	}
+
+	virtual AudioParams getMixedAudioParams()
+	{
+		static AudioParams params;
+		params.sample_rate = 48000;
+		params.channels = 2;
+		params.samples_per_call = 480;
+		return params;
+	}
+
+#endif
+
 private:
 	unsigned int mLogFrameInterval{ 100 };
 };
@@ -242,6 +277,56 @@ void drawBitmap(Bitmap& bmp)
     //SaveBitmap(bmp, L"test.png");
 }
 */
+
+#define CmoSetFrom(field, defaultValue)	\
+if (js.contains(#field))				\
+{										\
+	chMediaOptions.field = js.value(#field, defaultValue);	\
+}										\
+
+#define CmoCastFrom(field, type, defaultValue)	\
+if (js.contains(#field))				\
+{										\
+	chMediaOptions.field = static_cast<type>(js.value(#field, defaultValue));	\
+}										\
+
+void json2ChannelMediaOptions(const char* jsonOptions, agora::rtc::ChannelMediaOptions& chMediaOptions)
+{
+	json js = json::parse(jsonOptions);
+
+	CmoSetFrom(publishCameraTrack, false);
+	CmoSetFrom(publishSecondaryCameraTrack, false);
+
+#if AGORA_SDK_VERSION >= 40000000
+	if (js.contains("publishAudioTrack"))
+	{
+		chMediaOptions.publishMicrophoneTrack = js.value("publishAudioTrack", false);
+	}
+#else
+	CmoSetFrom(publishAudioTrack, false);
+#endif
+	CmoSetFrom(publishScreenTrack, false);
+	CmoSetFrom(publishSecondaryScreenTrack, false);
+	CmoSetFrom(publishCustomAudioTrack, false);
+	CmoSetFrom(publishCustomAudioTrackEnableAec, false);
+	CmoSetFrom(publishCustomVideoTrack, false);
+	CmoSetFrom(publishEncodedVideoTrack, false);
+	CmoSetFrom(publishMediaPlayerAudioTrack, false);
+	CmoSetFrom(publishMediaPlayerVideoTrack, false);
+	CmoSetFrom(publishTrancodedVideoTrack, false);
+	CmoSetFrom(autoSubscribeAudio, false);
+	CmoSetFrom(autoSubscribeVideo, false);
+	CmoSetFrom(enableAudioRecordingOrPlayout, false);
+
+	CmoSetFrom(publishMediaPlayerId, 0);
+	CmoSetFrom(audioDelayMs, 0);
+
+	CmoCastFrom(channelProfile, agora::CHANNEL_PROFILE_TYPE, 0);
+	CmoCastFrom(clientRoleType, agora::rtc::CLIENT_ROLE_TYPE, 0);
+	CmoCastFrom(audienceLatencyLevel, agora::rtc::AUDIENCE_LATENCY_LEVEL_TYPE, 0);
+	CmoCastFrom(defaultVideoStreamType, agora::rtc::VIDEO_STREAM_TYPE, 0);
+
+}
 
 AGORA_CAPI const char* getSdkErrorDescription(int error)
 {
@@ -362,6 +447,16 @@ AGORA_CAPI int initialize(IRtcEngine* rtcEngine, const char* appId, int areaCode
     return ret;
 }
 
+AGORA_CAPI int setLogFileSize(IRtcEngine* rtcEngine, unsigned int fileSizeInKB)
+{
+	if (rtcEngine == nullptr)
+	{
+		return -1;
+	}
+
+	return rtcEngine->setLogFileSize(fileSizeInKB);
+}
+
 #if AGORA_SDK_VERSION >= 36200000
 AGORA_CAPI int loadExtensionProvider(IRtcEngine* rtcEngine, const char* libPath)
 {
@@ -443,7 +538,7 @@ AGORA_CAPI int enableVirtualBackground(IRtcEngine* rtcEngine, int enabled, Virtu
 #endif
 
 #if (AGORA_SDK_VERSION >= 36200100 && AGORA_SDK_VERSION <= 36200109) || (AGORA_SDK_VERSION == 37204000 && IS_DEV_37204000)
-AGORA_CAPI int enableBrightnessCorrection(IRtcEngine* rtcEngine, int enable, BRIGHTNESS_CORRECTION_MODE mode, VIDEO_SOURCE_TYPE sourceType)
+AGORA_CAPI int enableBrightnessCorrection(IRtcEngine* rtcEngine, int enable, BRIGHTNESS_CORRECTION_MODE mode, agora::rtc::VIDEO_SOURCE_TYPE sourceType)
 {
 	if (rtcEngine == nullptr)
 	{
@@ -649,7 +744,7 @@ void trapezoidOptionsToJson(const TrapezoidCorrectionOptions& options, std::stri
     jsonOptions = js.dump(4);
 }
 
-AGORA_CAPI int enableLocalTrapezoidCorrection(IRtcEngine* rtcEngine, int enabled, VIDEO_SOURCE_TYPE sourceType)
+AGORA_CAPI int enableLocalTrapezoidCorrection(IRtcEngine* rtcEngine, int enabled, agora::rtc::VIDEO_SOURCE_TYPE sourceType)
 {
     if (rtcEngine == nullptr)
     {
@@ -658,7 +753,7 @@ AGORA_CAPI int enableLocalTrapezoidCorrection(IRtcEngine* rtcEngine, int enabled
     return rtcEngine->enableLocalTrapezoidCorrection((bool)enabled, sourceType);
 }
 
-AGORA_CAPI int setLocalTrapezoidCorrectionOptions(IRtcEngine* rtcEngine, const char* jsonOptions, VIDEO_SOURCE_TYPE sourceType)
+AGORA_CAPI int setLocalTrapezoidCorrectionOptions(IRtcEngine* rtcEngine, const char* jsonOptions, agora::rtc::VIDEO_SOURCE_TYPE sourceType)
 {
     if (rtcEngine == nullptr)
     {
@@ -671,7 +766,7 @@ AGORA_CAPI int setLocalTrapezoidCorrectionOptions(IRtcEngine* rtcEngine, const c
     return rtcEngine->setLocalTrapezoidCorrectionOptions(options, sourceType);
 }
 
-AGORA_CAPI int getLocalTrapezoidCorrectionOptions(IRtcEngine* rtcEngine, char* jsonOptions, int size, VIDEO_SOURCE_TYPE sourceType)
+AGORA_CAPI int getLocalTrapezoidCorrectionOptions(IRtcEngine* rtcEngine, char* jsonOptions, int size, agora::rtc::VIDEO_SOURCE_TYPE sourceType)
 {
     if (rtcEngine == nullptr)
     {
@@ -970,7 +1065,7 @@ AGORA_CAPI int stopSecondaryCameraCapture(IRtcEngine* rtcEngine)
 	return rtcEngine->stopSecondaryCameraCapture();
 }
 
-AGORA_CAPI int setCameraDeviceOrientation(IRtcEngine* rtcEngine, VIDEO_SOURCE_TYPE sourceType, VIDEO_ORIENTATION orientation)
+AGORA_CAPI int setCameraDeviceOrientation(IRtcEngine* rtcEngine, agora::rtc::VIDEO_SOURCE_TYPE sourceType, VIDEO_ORIENTATION orientation)
 {
 	if (rtcEngine == nullptr)
 	{
@@ -1034,7 +1129,7 @@ AGORA_CAPI int setVideoEncoderConfigurationEx(IRtcEngine* rtcEngine, const char*
 #endif
 
 AGORA_CAPI int setupLocalVideo(IRtcEngine* rtcEngine, uid_t uid, void* view, VIDEO_MIRROR_MODE_TYPE mirrorMode, RENDER_MODE_TYPE renderMode,
-	VIDEO_SOURCE_TYPE sourceType, int isScreenView, int setupMode)
+	agora::rtc::VIDEO_SOURCE_TYPE sourceType, int isScreenView, int setupMode)
 {
 	if (rtcEngine == nullptr)
 	{
@@ -1089,7 +1184,7 @@ AGORA_CAPI int setLocalVideoMirrorMode(IRtcEngine* rtcEngine, VIDEO_MIRROR_MODE_
 }
 
 #if (AGORA_SDK_VERSION >= 36200100 && AGORA_SDK_VERSION <= 36200109)
-AGORA_CAPI int setLocalRenderMode(IRtcEngine* rtcEngine, RENDER_MODE_TYPE renderMode, VIDEO_MIRROR_MODE_TYPE mirrorMode, VIDEO_SOURCE_TYPE sourceType)
+AGORA_CAPI int setLocalRenderMode(IRtcEngine* rtcEngine, RENDER_MODE_TYPE renderMode, VIDEO_MIRROR_MODE_TYPE mirrorMode, agora::rtc::VIDEO_SOURCE_TYPE sourceType)
 #else
 AGORA_CAPI int setLocalRenderMode(IRtcEngine* rtcEngine, RENDER_MODE_TYPE renderMode, VIDEO_MIRROR_MODE_TYPE mirrorMode)
 #endif
@@ -1115,7 +1210,7 @@ AGORA_CAPI int setRemoteRenderMode(IRtcEngine* rtcEngine, uid_t uid, RENDER_MODE
 }
 
 AGORA_CAPI int setupRemoteVideo(IRtcEngine* rtcEngine, uid_t uid, void* view, VIDEO_MIRROR_MODE_TYPE mirrorMode,
-    RENDER_MODE_TYPE renderMode, VIDEO_SOURCE_TYPE sourceType, int setupMode, int isScreenView, unsigned int connectionId)
+    RENDER_MODE_TYPE renderMode, agora::rtc::VIDEO_SOURCE_TYPE sourceType, int setupMode, int isScreenView, unsigned int connectionId)
 {
     if (rtcEngine == nullptr)
     {
@@ -1156,7 +1251,7 @@ AGORA_CAPI int stopPreview(IRtcEngine* rtcEngine)
 }
 
 #if AGORA_SDK_VERSION >= 36200000
-AGORA_CAPI int startPreview2(IRtcEngine* rtcEngine, VIDEO_SOURCE_TYPE type)
+AGORA_CAPI int startPreview2(IRtcEngine* rtcEngine, agora::rtc::VIDEO_SOURCE_TYPE type)
 {
 	if (rtcEngine == nullptr)
 	{
@@ -1165,13 +1260,93 @@ AGORA_CAPI int startPreview2(IRtcEngine* rtcEngine, VIDEO_SOURCE_TYPE type)
 	return rtcEngine->startPreview(type);
 }
 
-AGORA_CAPI int stopPreview2(IRtcEngine* rtcEngine, VIDEO_SOURCE_TYPE type)
+AGORA_CAPI int stopPreview2(IRtcEngine* rtcEngine, agora::rtc::VIDEO_SOURCE_TYPE type)
 {
 	if (rtcEngine == nullptr)
 	{
 		return -1;
 	}
 	return rtcEngine->stopPreview(type);
+}
+#endif
+
+#if AGORA_SDK_VERSION >= 37200000 && AGORA_SDK_VERSION != 37201100
+AGORA_CAPI int getScreenCaptureSources(IRtcEngine* rtcEngine, int thumbWidth, int thumbHeight, int iconWidth, int iconHeight, int includeScreen, char* outBuf, int size)
+{
+	if (rtcEngine == nullptr)
+	{
+		return -1;
+	}
+
+	SIZE thumbSize(thumbWidth, thumbHeight);
+	SIZE iconSize(iconWidth, iconHeight);
+	agora::rtc::IScreenCaptureSourceList* csList = rtcEngine->getScreenCaptureSources(thumbSize, iconSize, (bool)includeScreen);
+	if (csList)
+	{
+		json js;
+		FILE* pFile = fopen("agora_screen_sources.data", "wb");
+		unsigned int count = csList->getCount();
+		for (unsigned int n = 0; n < count; ++n)
+		{
+			json jsInfo;
+			agora::rtc::ScreenCaptureSourceInfo csInfo = csList->getSourceInfo(n);
+			jsInfo["type"] = csInfo.type;
+			jsInfo["primaryMonitor"] = csInfo.primaryMonitor;
+			jsInfo["isOccluded"] = csInfo.isOccluded;
+			jsInfo["processPath"] = csInfo.processPath;
+			jsInfo["sourceId"] = (size_t)csInfo.sourceId;
+			jsInfo["sourceName"] = csInfo.sourceName;
+			jsInfo["sourceTitle"] = csInfo.sourceTitle;
+			json jsThumb;
+			jsThumb["length"] = csInfo.thumbImage.length;
+			jsThumb["width"] = csInfo.thumbImage.width;
+			jsThumb["height"] = csInfo.thumbImage.height;
+			jsInfo["thumbImage"] = jsThumb;
+			json jsIcon;
+			jsIcon["length"] = csInfo.iconImage.length;
+			jsIcon["width"] = csInfo.iconImage.width;
+			jsIcon["height"] = csInfo.iconImage.height;
+			jsInfo["iconImage"] = jsIcon;
+
+			js["sourceList"].push_back(jsInfo);
+
+			if (pFile)
+			{
+				fwrite(&n, sizeof(n), 1, pFile);
+				fwrite(&csInfo.thumbImage.length, sizeof(csInfo.thumbImage.length), 1, pFile);
+				fwrite(&csInfo.thumbImage.width, sizeof(csInfo.thumbImage.width), 1, pFile);
+				fwrite(&csInfo.thumbImage.height, sizeof(csInfo.thumbImage.height), 1, pFile);
+				if (csInfo.thumbImage.length > 0)
+				{
+					fwrite(csInfo.thumbImage.buffer, csInfo.thumbImage.length, 1, pFile);
+				}
+				fwrite(&csInfo.iconImage.length, sizeof(csInfo.iconImage.length), 1, pFile);
+				fwrite(&csInfo.iconImage.width, sizeof(csInfo.iconImage.width), 1, pFile);
+				fwrite(&csInfo.iconImage.height, sizeof(csInfo.iconImage.height), 1, pFile);
+				if (csInfo.iconImage.length > 0)
+				{
+					fwrite(csInfo.iconImage.buffer, csInfo.iconImage.length, 1, pFile);
+				}
+			}
+		}
+
+		if (pFile)
+		{
+			fclose(pFile);
+			pFile = nullptr;
+		}
+
+		std::string jsonStr = js.dump();
+		std::strncpy(outBuf, jsonStr.c_str(), size);
+		outBuf[size - 1] = '\0';
+
+		csList->release();
+		csList = nullptr;
+		return 0;
+	}
+
+
+	return -1;
 }
 #endif
 
@@ -1292,17 +1467,7 @@ AGORA_CAPI int joinChannel(IRtcEngine* rtcEngine, const char* channelId, uid_t u
 }
 
 AGORA_CAPI int joinChannelWithOptions(IRtcEngine* rtcEngine, const char* channelId, uid_t uid, const char* token,
-    CHANNEL_PROFILE_TYPE channelProfile,
-    CLIENT_ROLE_TYPE clientRole,
-    int autoSubscribeAudio,
-	int autoSubscribeVideo,
-	int publishAudioTrack,
-    int publishCameraTrack,
-	int publishSecondaryCameraTrack,
-	int publishScreenTrack,
-	int publishSecondaryScreenTrack,
-	int publishCustomAudioTrack,
-    int publishCustomVideoTrack)
+    const char* optionsJson)
 {
 	if (rtcEngine == nullptr)
 	{
@@ -1310,66 +1475,12 @@ AGORA_CAPI int joinChannelWithOptions(IRtcEngine* rtcEngine, const char* channel
 	}
 
     ChannelMediaOptions options;
-	options.channelProfile = channelProfile;
-    options.clientRoleType = clientRole;
-
-    //callee use -1 if not set
-	if (autoSubscribeAudio == 0 || autoSubscribeAudio == 1)
-	{
-		options.autoSubscribeAudio = (bool)autoSubscribeAudio;
-	}
-	if (autoSubscribeVideo == 0 || autoSubscribeVideo == 1)
-	{
-		options.autoSubscribeVideo = (bool)autoSubscribeVideo;
-	}
-	if (publishAudioTrack == 0 || publishAudioTrack == 1)
-	{
-#if AGORA_SDK_VERSION >= 40000000
-		options.publishMicrophoneTrack = (bool)publishAudioTrack;
-#else
-		options.publishAudioTrack = (bool)publishAudioTrack;
-#endif
-	}
-    if (publishCameraTrack == 0 || publishCameraTrack == 1)
-    {
-        options.publishCameraTrack = (bool)publishCameraTrack;
-    }
-	if (publishSecondaryCameraTrack == 0 || publishSecondaryCameraTrack == 1)
-	{
-		options.publishSecondaryCameraTrack = (bool)publishSecondaryCameraTrack;
-	}
-	if (publishScreenTrack == 0 || publishScreenTrack == 1)
-	{
-		options.publishScreenTrack = (bool)publishScreenTrack;
-	}
-	if (publishSecondaryScreenTrack == 0 || publishSecondaryScreenTrack == 1)
-	{
-		options.publishSecondaryScreenTrack = (bool)publishSecondaryScreenTrack;
-	}
-	if (publishCustomAudioTrack == 0 || publishCustomAudioTrack == 1)
-	{
-		options.publishCustomAudioTrack = (bool)publishCustomAudioTrack;
-	}
-    if (publishCustomVideoTrack == 0 || publishCustomVideoTrack == 1)
-    {
-        options.publishCustomVideoTrack = (bool)publishCustomVideoTrack;
-    }
+	json2ChannelMediaOptions(optionsJson, options);
 
 	return rtcEngine->joinChannel(token, channelId, uid, options);
 }
 
-AGORA_CAPI int updateChannelMediaOptions(IRtcEngine* rtcEngine,
-	CHANNEL_PROFILE_TYPE channelProfile,
-	CLIENT_ROLE_TYPE clientRole,
-	int autoSubscribeAudio,
-	int autoSubscribeVideo,
-	int publishAudioTrack,
-	int publishCameraTrack,
-	int publishSecondaryCameraTrack,
-	int publishScreenTrack,
-	int publishSecondaryScreenTrack,
-	int publishCustomAudioTrack,
-	int publishCustomVideoTrack)
+AGORA_CAPI int updateChannelMediaOptions(IRtcEngine* rtcEngine, const char* optionsJson)
 {
 	if (rtcEngine == nullptr)
 	{
@@ -1377,50 +1488,7 @@ AGORA_CAPI int updateChannelMediaOptions(IRtcEngine* rtcEngine,
 	}
 
 	ChannelMediaOptions options;
-	options.channelProfile = channelProfile;
-	options.clientRoleType = clientRole;
-
-	//callee use -1 if not set
-	if (autoSubscribeAudio == 0 || autoSubscribeAudio == 1)
-	{
-		options.autoSubscribeAudio = (bool)autoSubscribeAudio;
-	}
-	if (autoSubscribeVideo == 0 || autoSubscribeVideo == 1)
-	{
-		options.autoSubscribeVideo = (bool)autoSubscribeVideo;
-	}
-	if (publishAudioTrack == 0 || publishAudioTrack == 1)
-	{
-#if AGORA_SDK_VERSION >= 40000000
-		options.publishMicrophoneTrack = (bool)publishAudioTrack;
-#else
-		options.publishAudioTrack = (bool)publishAudioTrack;
-#endif
-	}
-	if (publishCameraTrack == 0 || publishCameraTrack == 1)
-	{
-		options.publishCameraTrack = (bool)publishCameraTrack;
-	}
-	if (publishSecondaryCameraTrack == 0 || publishSecondaryCameraTrack == 1)
-	{
-		options.publishSecondaryCameraTrack = (bool)publishSecondaryCameraTrack;
-	}
-	if (publishScreenTrack == 0 || publishScreenTrack == 1)
-	{
-		options.publishScreenTrack = (bool)publishScreenTrack;
-	}
-	if (publishSecondaryScreenTrack == 0 || publishSecondaryScreenTrack == 1)
-	{
-		options.publishSecondaryScreenTrack = (bool)publishSecondaryScreenTrack;
-	}
-	if (publishCustomAudioTrack == 0 || publishCustomAudioTrack == 1)
-	{
-		options.publishCustomAudioTrack = (bool)publishCustomAudioTrack;
-	}
-	if (publishCustomVideoTrack == 0 || publishCustomVideoTrack == 1)
-	{
-		options.publishCustomVideoTrack = (bool)publishCustomVideoTrack;
-	}
+	json2ChannelMediaOptions(optionsJson, options);
 
 	return rtcEngine->updateChannelMediaOptions(options);
 }
@@ -1437,18 +1505,7 @@ AGORA_CAPI int joinChannelWithUserAccount(IRtcEngine* rtcEngine, const char* cha
 }
 
 AGORA_CAPI int joinChannelWithUserAccount2(IRtcEngine* rtcEngine, const char* channelId,
-	const char* userAccount, const char* token, 
-	CHANNEL_PROFILE_TYPE channelProfile,
-	CLIENT_ROLE_TYPE clientRole,
-	int autoSubscribeAudio,
-	int autoSubscribeVideo,
-	int publishAudioTrack,
-	int publishCameraTrack,
-	int publishSecondaryCameraTrack,
-	int publishScreenTrack,
-	int publishSecondaryScreenTrack,
-	int publishCustomAudioTrack,
-	int publishCustomVideoTrack)
+	const char* userAccount, const char* token, const char* optionsJson)
 {
 	if (rtcEngine == nullptr)
 	{
@@ -1456,48 +1513,7 @@ AGORA_CAPI int joinChannelWithUserAccount2(IRtcEngine* rtcEngine, const char* ch
 	}
 
 	ChannelMediaOptions options;
-	options.channelProfile = channelProfile;
-	options.clientRoleType = clientRole;
-	if (autoSubscribeAudio == 0 || autoSubscribeAudio == 1)
-	{
-		options.autoSubscribeAudio = (bool)autoSubscribeAudio;
-	}
-	if (autoSubscribeVideo == 0 || autoSubscribeVideo == 1)
-	{
-		options.autoSubscribeVideo = (bool)autoSubscribeVideo;
-	}
-	if (publishAudioTrack == 0 || publishAudioTrack == 1)
-	{
-#if AGORA_SDK_VERSION >= 40000000
-		options.publishMicrophoneTrack = (bool)publishAudioTrack;
-#else
-		options.publishAudioTrack = (bool)publishAudioTrack;
-#endif
-	}
-	if (publishCameraTrack == 0 || publishCameraTrack == 1)
-	{
-		options.publishCameraTrack = (bool)publishCameraTrack;
-	}
-	if (publishSecondaryCameraTrack == 0 || publishSecondaryCameraTrack == 1)
-	{
-		options.publishSecondaryCameraTrack = (bool)publishSecondaryCameraTrack;
-	}
-	if (publishScreenTrack == 0 || publishScreenTrack == 1)
-	{
-		options.publishScreenTrack = (bool)publishScreenTrack;
-	}
-	if (publishSecondaryScreenTrack == 0 || publishSecondaryScreenTrack == 1)
-	{
-		options.publishSecondaryScreenTrack = (bool)publishSecondaryScreenTrack;
-	}
-	if (publishCustomAudioTrack == 0 || publishCustomAudioTrack == 1)
-	{
-		options.publishCustomAudioTrack = (bool)publishCustomAudioTrack;
-	}
-	if (publishCustomVideoTrack == 0 || publishCustomVideoTrack == 1)
-	{
-		options.publishCustomVideoTrack = (bool)publishCustomVideoTrack;
-	}
+	json2ChannelMediaOptions(optionsJson, options);
 
 	return rtcEngine->joinChannelWithUserAccount(token, channelId, userAccount, options);
 }
@@ -1535,18 +1551,8 @@ AGORA_CAPI int setupRemoteVideoEx(IRtcEngine* rtcEngine, uid_t uid, void* view, 
 }
 
 
-AGORA_CAPI int joinChannelEx(IRtcEngine* rtcEngine, const char* channelId, uid_t uid, const char* token, AgoraEventHandler* eventHandler,
-	CHANNEL_PROFILE_TYPE channelProfile,
-	CLIENT_ROLE_TYPE clientRole,
-	int autoSubscribeAudio,
-	int autoSubscribeVideo,
-	int publishAudioTrack,
-	int publishCameraTrack,
-	int publishSecondaryCameraTrack,
-	int publishScreenTrack,
-	int publishSecondaryScreenTrack,
-	int publishCustomAudioTrack,
-	int publishCustomVideoTrack)
+AGORA_CAPI int joinChannelEx(IRtcEngine* rtcEngine, const char* channelId, uid_t uid,
+	const char* token, const char* optionsJson, AgoraEventHandler* eventHandler)
 {
 	if (rtcEngine == nullptr)
 	{
@@ -1557,64 +1563,12 @@ AGORA_CAPI int joinChannelEx(IRtcEngine* rtcEngine, const char* channelId, uid_t
 	RtcConnection connt(channelId, uid);
 
 	ChannelMediaOptions options;
-	options.channelProfile = channelProfile;
-	options.clientRoleType = clientRole;
-	if (autoSubscribeAudio == 0 || autoSubscribeAudio == 1)
-	{
-		options.autoSubscribeAudio = (bool)autoSubscribeAudio;
-	}
-	if (autoSubscribeVideo == 0 || autoSubscribeVideo == 1)
-	{
-		options.autoSubscribeVideo = (bool)autoSubscribeVideo;
-	}
-	if (publishAudioTrack == 0 || publishAudioTrack == 1)
-	{
-#if AGORA_SDK_VERSION >= 40000000
-		options.publishMicrophoneTrack = (bool)publishAudioTrack;
-#else
-		options.publishAudioTrack = (bool)publishAudioTrack;
-#endif
-	}
-	if (publishCameraTrack == 0 || publishCameraTrack == 1)
-	{
-		options.publishCameraTrack = (bool)publishCameraTrack;
-	}
-	if (publishSecondaryCameraTrack == 0 || publishSecondaryCameraTrack == 1)
-	{
-		options.publishSecondaryCameraTrack = (bool)publishSecondaryCameraTrack;
-	}
-	if (publishScreenTrack == 0 || publishScreenTrack == 1)
-	{
-		options.publishScreenTrack = (bool)publishScreenTrack;
-	}
-	if (publishSecondaryScreenTrack == 0 || publishSecondaryScreenTrack == 1)
-	{
-		options.publishSecondaryScreenTrack = (bool)publishSecondaryScreenTrack;
-	}
-	if (publishCustomAudioTrack == 0 || publishCustomAudioTrack == 1)
-	{
-		options.publishCustomAudioTrack = (bool)publishCustomAudioTrack;
-	}
-	if (publishCustomVideoTrack == 0 || publishCustomVideoTrack == 1)
-	{
-		options.publishCustomVideoTrack = (bool)publishCustomVideoTrack;
-	}
+	json2ChannelMediaOptions(optionsJson, options);
 
 	return rtcEngineEx->joinChannelEx(token, connt, options, eventHandler);
 }
 
-AGORA_CAPI int updateChannelMediaOptionsEx(IRtcEngine* rtcEngine, const char* channelId, uid_t uid,
-	CHANNEL_PROFILE_TYPE channelProfile,
-	CLIENT_ROLE_TYPE clientRole,
-	int autoSubscribeAudio,
-	int autoSubscribeVideo,
-	int publishAudioTrack,
-	int publishCameraTrack,
-	int publishSecondaryCameraTrack,
-	int publishScreenTrack,
-	int publishSecondaryScreenTrack,
-	int publishCustomAudioTrack,
-	int publishCustomVideoTrack)
+AGORA_CAPI int updateChannelMediaOptionsEx(IRtcEngine* rtcEngine, const char* channelId, uid_t uid, const char* optionsJson)
 {
 	if (rtcEngine == nullptr)
 	{
@@ -1625,64 +1579,14 @@ AGORA_CAPI int updateChannelMediaOptionsEx(IRtcEngine* rtcEngine, const char* ch
 	RtcConnection connt(channelId, uid);
 
 	ChannelMediaOptions options;
-	options.channelProfile = channelProfile;
-	options.clientRoleType = clientRole;
-	if (autoSubscribeAudio == 0 || autoSubscribeAudio == 1)
-	{
-		options.autoSubscribeAudio = (bool)autoSubscribeAudio;
-	}
-	if (autoSubscribeVideo == 0 || autoSubscribeVideo == 1)
-	{
-		options.autoSubscribeVideo = (bool)autoSubscribeVideo;
-	}
-	if (publishAudioTrack == 0 || publishAudioTrack == 1)
-	{
-#if AGORA_SDK_VERSION >= 40000000
-		options.publishMicrophoneTrack = (bool)publishAudioTrack;
-#else
-		options.publishAudioTrack = (bool)publishAudioTrack;
-#endif
-	}
-	if (publishCameraTrack == 0 || publishCameraTrack == 1)
-	{
-		options.publishCameraTrack = (bool)publishCameraTrack;
-	}
-	if (publishSecondaryCameraTrack == 0 || publishSecondaryCameraTrack == 1)
-	{
-		options.publishSecondaryCameraTrack = (bool)publishSecondaryCameraTrack;
-	}
-	if (publishScreenTrack == 0 || publishScreenTrack == 1)
-	{
-		options.publishScreenTrack = (bool)publishScreenTrack;
-	}
-	if (publishSecondaryScreenTrack == 0 || publishSecondaryScreenTrack == 1)
-	{
-		options.publishSecondaryScreenTrack = (bool)publishSecondaryScreenTrack;
-	}
-	if (publishCustomAudioTrack == 0 || publishCustomAudioTrack == 1)
-	{
-		options.publishCustomAudioTrack = (bool)publishCustomAudioTrack;
-	}
-	if (publishCustomVideoTrack == 0 || publishCustomVideoTrack == 1)
-	{
-		options.publishCustomVideoTrack = (bool)publishCustomVideoTrack;
-	}
+	json2ChannelMediaOptions(optionsJson, options);
 
 	return rtcEngineEx->updateChannelMediaOptionsEx(options, connt);
 }
 
 
-AGORA_CAPI int joinChannelWithUserAccountEx(IRtcEngine* rtcEngine, const char* channelId, const char* userAccount, const char* token, AgoraEventHandler* eventHandler,
-	CHANNEL_PROFILE_TYPE channelProfile,
-	CLIENT_ROLE_TYPE clientRole,
-	int autoSubscribeAudio,
-	int autoSubscribeVideo,
-	int publishAudioTrack,
-	int publishCameraTrack,
-	int publishSecondaryCameraTrack,
-	int publishScreenTrack,
-	int publishSecondaryScreenTrack,
-	int publishCustomVideoTrack)
+AGORA_CAPI int joinChannelWithUserAccountEx(IRtcEngine* rtcEngine, const char* channelId, const char* userAccount,
+	const char* token, const char* optionsJson, AgoraEventHandler* eventHandler)
 {
 	if (rtcEngine == nullptr)
 	{
@@ -1691,44 +1595,7 @@ AGORA_CAPI int joinChannelWithUserAccountEx(IRtcEngine* rtcEngine, const char* c
 
 	IRtcEngineEx* rtcEngineEx = static_cast<IRtcEngineEx*>(rtcEngine);
 	ChannelMediaOptions options;
-	options.channelProfile = channelProfile;
-	options.clientRoleType = clientRole;
-	if (autoSubscribeAudio == 0 || autoSubscribeAudio == 1)
-	{
-		options.autoSubscribeAudio = (bool)autoSubscribeAudio;
-	}
-	if (autoSubscribeVideo == 0 || autoSubscribeVideo == 1)
-	{
-		options.autoSubscribeVideo = (bool)autoSubscribeVideo;
-	}
-	if (publishAudioTrack == 0 || publishAudioTrack == 1)
-	{
-#if AGORA_SDK_VERSION >= 40000000
-		options.publishMicrophoneTrack = (bool)publishAudioTrack;
-#else
-		options.publishAudioTrack = (bool)publishAudioTrack;
-#endif
-	}
-	if (publishCameraTrack == 0 || publishCameraTrack == 1)
-	{
-		options.publishCameraTrack = (bool)publishCameraTrack;
-	}
-	if (publishSecondaryCameraTrack == 0 || publishSecondaryCameraTrack == 1)
-	{
-		options.publishSecondaryCameraTrack = (bool)publishSecondaryCameraTrack;
-	}
-	if (publishScreenTrack == 0 || publishScreenTrack == 1)
-	{
-		options.publishScreenTrack = (bool)publishScreenTrack;
-	}
-	if (publishSecondaryScreenTrack == 0 || publishSecondaryScreenTrack == 1)
-	{
-		options.publishSecondaryScreenTrack = (bool)publishSecondaryScreenTrack;
-	}
-	if (publishCustomVideoTrack == 0 || publishCustomVideoTrack == 1)
-	{
-		options.publishCustomVideoTrack = (bool)publishCustomVideoTrack;
-	}
+	json2ChannelMediaOptions(optionsJson, options);
 
 	return rtcEngineEx->joinChannelWithUserAccountEx(token, channelId, userAccount, options, eventHandler);
 }
@@ -1796,7 +1663,7 @@ AGORA_CAPI int muteRemoteVideoStream(IRtcEngine* rtcEngine, uid_t uid, int mute,
 #endif
 }
 
-#if (AGORA_SDK_VERSION >= 36200104 && AGORA_SDK_VERSION <= 36200109) && IS_DEV_36200104
+#if (AGORA_SDK_VERSION >= 36200105 && AGORA_SDK_VERSION <= 36200109)
 AGORA_CAPI int takeSnapshot(IRtcEngine* rtcEngine, uid_t uid, const char* filePath,
 	float left, float top, float right, float bottom)
 {
@@ -1821,14 +1688,14 @@ AGORA_CAPI int takeSnapshotEx(IRtcEngine* rtcEngine, uid_t uid, const char* file
 	return rtcEngineEx->takeSnapshotEx(uid, filePath, left, top, right, bottom, connt);
 }
 
-AGORA_CAPI int startServerSuperResolution(IRtcEngine* rtcEngine, const char* token, const char* imagePath, float scale, int timeoutSeconds)
+AGORA_CAPI int startServerSuperResolution(IRtcEngine* rtcEngine, const char* token, const char* srcImagePath, const char* dstImagePath, float scale, int timeoutSeconds)
 {
 	if (rtcEngine == nullptr)
 	{
 		return -1;
 	}
 
-	return rtcEngine->startServerSuperResolution(token, imagePath, scale, timeoutSeconds);
+	return rtcEngine->startServerSuperResolution(token, srcImagePath, dstImagePath, scale, timeoutSeconds);
 }
 
 #endif

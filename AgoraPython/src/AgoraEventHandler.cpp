@@ -128,6 +128,36 @@ void AgoraEventHandler::onLocalVideoStateChanged(LOCAL_VIDEO_STREAM_STATE state,
 	CALLBACK_BLOCK_END
 }
 
+void AgoraEventHandler::onLocalVideoStats(const LocalVideoStats& stats)
+{
+	CALLBACK_BLOCK_BEGIN
+
+	json js;
+	js["codecType"] = stats.codecType;
+	js["encodedBitrate"] = stats.encodedBitrate;
+	js["encodedFrameCount"] = stats.encodedFrameCount;
+	js["encodedFrameWidth"] = stats.encodedFrameWidth;
+	js["encodedFrameHeight"] = stats.encodedFrameHeight;
+	js["encoderOutputFrameRate"] = stats.encoderOutputFrameRate;
+	js["rendererOutputFrameRate"] = stats.rendererOutputFrameRate;
+#if AGORA_SDK_VERSION >= 37200000
+	js["captureFrameRate"] = stats.captureFrameRate;
+	js["captureFrameWidth"] = stats.captureFrameWidth;
+	js["captureFrameHeight"] = stats.captureFrameHeight;
+	js["regulatedCaptureFrameRate"] = stats.regulatedCaptureFrameRate;
+	js["regulatedCaptureFrameWidth"] = stats.regulatedCaptureFrameWidth;
+	js["regulatedCaptureFrameHeight"] = stats.regulatedCaptureFrameHeight;
+#endif
+	js["sentBitrate"] = stats.sentBitrate;
+	js["sentFrameRate"] = stats.sentFrameRate;
+	js["targetBitrate"] = stats.targetBitrate;
+	js["targetFrameRate"] = stats.targetFrameRate;
+
+	std::string jsonStr = js.dump(4);
+
+	CALLBACK_BLOCK_END
+}
+
 void AgoraEventHandler::onRemoteAudioStateChanged(uid_t uid, REMOTE_AUDIO_STATE state, REMOTE_AUDIO_STATE_REASON reason, int elapsed)
 {
 	CALLBACK_BLOCK_BEGIN
@@ -152,6 +182,30 @@ void AgoraEventHandler::onRemoteVideoStateChanged(uid_t uid, REMOTE_VIDEO_STATE 
 	js["state"] = state;
 	js["reason"] = reason;
 	js["elapsed"] = elapsed;
+
+	std::string jsonStr = js.dump(4);
+
+	CALLBACK_BLOCK_END
+}
+
+void AgoraEventHandler::onRemoteVideoStats(const RemoteVideoStats& stats)
+{
+	CALLBACK_BLOCK_BEGIN
+
+	json js;
+	js["uid"] = stats.uid;
+	js["avSyncTimeMs"] = stats.avSyncTimeMs;
+	js["decoderOutputFrameRate"] = stats.decoderOutputFrameRate;
+	js["delay"] = stats.delay;
+	js["frameLossRate"] = stats.frameLossRate;
+	js["frozenRate"] = stats.frozenRate;
+	js["packetLossRate"] = stats.packetLossRate;
+	js["receivedBitrate"] = stats.receivedBitrate;
+	js["rendererOutputFrameRate"] = stats.rendererOutputFrameRate;
+	js["rxStreamType"] = stats.rxStreamType;
+	js["totalFrozenTime"] = stats.totalFrozenTime;
+	js["width"] = stats.width;
+	js["height"] = stats.height;
 
 	std::string jsonStr = js.dump(4);
 
@@ -446,30 +500,17 @@ void AgoraEventHandler::onContentInspectResult(agora::media::CONTENT_INSPECT_RES
 }
 #endif
 
-#if (AGORA_SDK_VERSION >= 36200104 && AGORA_SDK_VERSION <= 36200109) && IS_DEV_36200104
+#if (AGORA_SDK_VERSION >= 36200105 && AGORA_SDK_VERSION <= 36200109)
 void AgoraEventHandler::onServerSuperResolutionResult(int httpStatusCode, int errCode, const char* errReason,
-	const char* imageData, int imageSize, int width, int height)
+	const char* dstImagePath, int width, int height)
 {
     CALLBACK_BLOCK_BEGIN
-
-    std::string imagePath;
-    if (imageData && imageSize > 0)
-    {
-        imagePath = "server-sr-image.jpg";
-        FILE* pFile = fopen(imagePath.c_str(), "wb");
-        if (pFile)
-        {
-            fwrite(imageData, imageSize, 1, pFile);
-            fclose(pFile);
-            pFile = nullptr;
-        }
-    }
 
 	json js;
 	js["httpStatusCode"] = httpStatusCode;
 	js["errCode"] = errCode;
 	js["errReason"] = errReason;
-	js["imagePath"] = imagePath;
+	js["dstImagePath"] = dstImagePath;
 	js["width"] = width;
 	js["height"] = height;
 

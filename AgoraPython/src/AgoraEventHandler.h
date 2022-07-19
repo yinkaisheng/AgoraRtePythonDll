@@ -34,12 +34,14 @@ private:
 	void onUserOffline(uid_t uid, USER_OFFLINE_REASON_TYPE reason) override;
 	void onLocalAudioStateChanged(LOCAL_AUDIO_STREAM_STATE state, LOCAL_AUDIO_STREAM_ERROR error) override;
 	void onLocalVideoStateChanged(LOCAL_VIDEO_STREAM_STATE state, LOCAL_VIDEO_STREAM_ERROR error) override;
+	void onLocalVideoStats(const LocalVideoStats& stats) override;
 	void onFirstLocalVideoFrame(int width, int height, int elapsed) override;
 	void onFirstLocalVideoFramePublished(int elapsed) override;
 	void onFirstRemoteVideoDecoded(uid_t uid, int width, int height, int elapsed) override;
     //void onFirstRemoteVideoFrame(uid_t uid, int width, int height, int elapsed) override;//not suggested
 	void onRemoteAudioStateChanged(uid_t uid, REMOTE_AUDIO_STATE state, REMOTE_AUDIO_STATE_REASON reason, int elapsed) override;
 	void onRemoteVideoStateChanged(uid_t uid, REMOTE_VIDEO_STATE state, REMOTE_VIDEO_STATE_REASON reason, int elapsed) override;
+	void onRemoteVideoStats(const RemoteVideoStats& stats) override;
 	void onVideoSizeChanged(uid_t uid, int width, int height, int rotation) override;
 	void onVideoStopped() override;
 	void onAudioDeviceStateChanged(const char* deviceId, int deviceType, int deviceState) override;
@@ -77,8 +79,8 @@ private:
 	void onContentInspectResult(agora::media::CONTENT_INSPECT_RESULT result) override;
 #endif
 
-#if (AGORA_SDK_VERSION >= 36200104 && AGORA_SDK_VERSION <= 36200109) && IS_DEV_36200104
-	void onServerSuperResolutionResult(int httpStatusCode, int errCode, const char* errReason, const char* imageData, int imageSize, int width, int height) override;
+#if (AGORA_SDK_VERSION >= 36200105 && AGORA_SDK_VERSION <= 36200109)
+	void onServerSuperResolutionResult(int httpStatusCode, int errCode, const char* errReason, const char* dstImagePath, int width, int height) override;
 #endif
 
 private:
