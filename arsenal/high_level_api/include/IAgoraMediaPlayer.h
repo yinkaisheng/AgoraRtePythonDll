@@ -147,38 +147,6 @@ public:
    */
   virtual int setLoopCount(int loopCount) = 0;
 
- /**
-   * Mute the audio playing
-   * @param audio_mute : mute or unmute audio
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   */
-  virtual int muteAudio(bool audio_mute) = 0;
-
-  /**
-   * Gets whehter audio is muted
-   * @param None
-   * @return true or false
-   */
-  virtual bool isAudioMuted() = 0;
-
-  /**
-   * Mute the audio playing
-   * @param video_mute : mute or unmute video
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   */
-  virtual int muteVideo(bool video_mute) = 0;
-
-  /**
-   * Gets whehter audio is muted
-   * @param None
-   * @return true or false
-   */
-  virtual bool isVideoMuted() = 0;
-
   /**
    * Change playback speed
    * @param speed the value of playback speed ref [50-400]
@@ -248,18 +216,18 @@ public:
   /**
    * @brief Turn mute on or off
    *
-   * @param mute Whether to mute on
+   * @param muted Whether to mute on
    * @return int < 0 on behalf of an error, the value corresponds to one of MEDIA_PLAYER_ERROR
    */
-  virtual int mute(bool mute) = 0;
+  virtual int mute(bool muted) = 0;
 
   /**
    * @brief Get mute state
    *
-   * @param[out] mute Whether is mute on
+   * @param[out] muted Whether is mute on
    * @return int < 0 on behalf of an error, the value corresponds to one of MEDIA_PLAYER_ERROR
    */
-  virtual int getMute(bool& mute) = 0;
+  virtual int getMute(bool& muted) = 0;
 
   /**
    * @brief Adjust playback volume

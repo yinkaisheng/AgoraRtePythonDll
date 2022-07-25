@@ -189,6 +189,14 @@ public:
 		return params;
 	}
 
+	virtual AudioParams getEarMonitoringAudioParams()
+	{
+		static AudioParams params;
+		params.sample_rate = 48000;
+		params.channels = 2;
+		params.samples_per_call = 480;
+		return params;
+	}
 #endif
 
 private:
@@ -284,6 +292,13 @@ if (js.contains(#field))				\
 	chMediaOptions.field = js.value(#field, defaultValue);	\
 }										\
 
+#define CmoSetStringFrom(field, defaultValue)	\
+if (js.contains(#field))				\
+{										\
+	static std::string field = js.value(#field, defaultValue);	\
+	chMediaOptions.field = field.c_str();						\
+}										\
+
 #define CmoCastFrom(field, type, defaultValue)	\
 if (js.contains(#field))				\
 {										\
@@ -317,15 +332,29 @@ void json2ChannelMediaOptions(const char* jsonOptions, agora::rtc::ChannelMediaO
 	CmoSetFrom(autoSubscribeAudio, false);
 	CmoSetFrom(autoSubscribeVideo, false);
 	CmoSetFrom(enableAudioRecordingOrPlayout, false);
+#if AGORA_SDK_VERSION >= 38202000
+	CmoSetFrom(publishCustomAudioSourceId, false);
+	CmoSetFrom(publishDirectCustomAudioTrack, false);
+	CmoSetFrom(enableBuiltInMediaEncryption, false);
+	CmoSetFrom(publishRhythmPlayerTrack, false);
+	CmoSetFrom(isInteractiveAudience, false);
+#endif
+
+#if AGORA_SDK_VERSION >= 38202000 && AGORA_SDK_VERSION <= 38209000
+	CmoSetFrom(startPreview, false);
+#endif
 
 	CmoSetFrom(publishMediaPlayerId, 0);
 	CmoSetFrom(audioDelayMs, 0);
+#if AGORA_SDK_VERSION >= 38202000
+	CmoSetFrom(mediaPlayerAudioDelayMs, 0);
+	CmoSetStringFrom(token, "");
+#endif
 
 	CmoCastFrom(channelProfile, agora::CHANNEL_PROFILE_TYPE, 0);
 	CmoCastFrom(clientRoleType, agora::rtc::CLIENT_ROLE_TYPE, 0);
 	CmoCastFrom(audienceLatencyLevel, agora::rtc::AUDIENCE_LATENCY_LEVEL_TYPE, 0);
 	CmoCastFrom(defaultVideoStreamType, agora::rtc::VIDEO_STREAM_TYPE, 0);
-
 }
 
 AGORA_CAPI const char* getSdkErrorDescription(int error)
@@ -1829,7 +1858,7 @@ AGORA_CAPI int getVideoDeviceNumberOfCapabilities(IRtcEngine* rtcEngine, const c
 {
 	INIT_VIDEO_DEVICE_MANAGER
 
-#if AGORA_SDK_VERSION == 37200100 || AGORA_SDK_VERSION >= 40000000
+#if AGORA_SDK_VERSION == 37200000 || AGORA_SDK_VERSION == 37201100 || AGORA_SDK_VERSION >= 38202000
 	return sVideoDeviceManager->numberOfCapabilities(szDeviceId);
 #else
 	return 0;
@@ -1840,7 +1869,7 @@ AGORA_CAPI int getVideoDeviceCapabilities(IRtcEngine* rtcEngine, const char* szD
 {
 	INIT_VIDEO_DEVICE_MANAGER
 
-#if AGORA_SDK_VERSION == 37201100 || AGORA_SDK_VERSION >= 40000000
+#if AGORA_SDK_VERSION == 37200000 || AGORA_SDK_VERSION == 37201100 || AGORA_SDK_VERSION >= 38202000
 	std::string strOutput;
 	char szFormat[64];
 	int count = sVideoDeviceManager->numberOfCapabilities(szDeviceId);

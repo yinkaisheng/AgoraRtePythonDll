@@ -293,16 +293,15 @@ enum CHANNEL_PROFILE_TYPE {
   /**
    * 3: Cloud Gaming.
    *
-   * This profile prioritizes low end-to-end latency and applies to scenarios where users interact
-   * with each other, and any delay affects the user experience.
+   * @deprecated This profile is deprecated.
    */
-  CHANNEL_PROFILE_CLOUD_GAMING = 3,
+  CHANNEL_PROFILE_CLOUD_GAMING __deprecated = 3,
 
   /**
    * 4: Communication 1v1.
    * @deprecated This profile is deprecated.
    */
-  CHANNEL_PROFILE_COMMUNICATION_1v1 = 4,
+  CHANNEL_PROFILE_COMMUNICATION_1v1 __deprecated = 4,
 };
 
 /**
@@ -534,12 +533,6 @@ enum ERROR_CODE_TYPE {
    */
   ERR_NET_DOWN = 14,
   /**
-   * 15: No network buffers are available. This is for internal
-   * use only, and does not return to the application through any method or
-   * callback.
-   */
-  ERR_NET_NOBUFS = 15,
-  /**
    * 17: The request to join the channel is rejected. This error usually occurs
    * when the user is already in the channel, and still calls the method to join
    * the channel, for example, \ref agora::rtc::IRtcEngine::joinChannel "joinChannel()".
@@ -670,30 +663,6 @@ enum ERROR_CODE_TYPE {
    */
   ERR_CLIENT_IS_BANNED_BY_SERVER = 123,
   /**
-   * 124: Incorrect watermark file parameter.
-   */
-  ERR_WATERMARK_PARAM = 124,
-  /**
-   * 125: Incorrect watermark file path.
-   */
-  ERR_WATERMARK_PATH = 125,
-  /**
-   * 126: Incorrect watermark file format.
-   */
-  ERR_WATERMARK_PNG = 126,
-  /**
-   * 127: Incorrect watermark file information.
-   */
-  ERR_WATERMARKR_INFO = 127,
-  /**
-   * 128: Incorrect watermark file data format.
-   */
-  ERR_WATERMARK_ARGB = 128,
-  /**
-   * 129: An error occurs in reading the watermark file.
-   */
-  ERR_WATERMARK_READ = 129,
-  /**
    * 130: Encryption is enabled when the user calls the
    * \ref agora::rtc::IRtcEngine::addPublishStreamUrl "addPublishStreamUrl()" method
    * (CDN live streaming does not support encrypted streams).
@@ -732,46 +701,13 @@ enum ERROR_CODE_TYPE {
   ERR_CERT_REQUEST = 168,
 
   // PcmSend Error num
-  ERR_PCMSEND_FORMAT =200,           // unsupport pcm format
+  ERR_PCMSEND_FORMAT = 200,           // unsupport pcm format
   ERR_PCMSEND_BUFFEROVERFLOW = 201,  // buffer overflow, the pcm send rate too quickly
 
   /// @cond
   // signaling: 400~600
-  ERR_LOGOUT_OTHER = 400,          //
-  ERR_LOGOUT_USER = 401,           // logout by user
-  ERR_LOGOUT_NET = 402,            // network failure
-  ERR_LOGOUT_KICKED = 403,         // login in other device
-  ERR_LOGOUT_PACKET = 404,         //
-  ERR_LOGOUT_TOKEN_EXPIRED = 405,  // token expired
-  ERR_LOGOUT_OLDVERSION = 406,     //
-  ERR_LOGOUT_TOKEN_WRONG = 407,
-  ERR_LOGOUT_ALREADY_LOGOUT = 408,
-  ERR_LOGIN_OTHER = 420,
-  ERR_LOGIN_NET = 421,
-  ERR_LOGIN_FAILED = 422,
-  ERR_LOGIN_CANCELED = 423,
-  ERR_LOGIN_TOKEN_EXPIRED = 424,
-  ERR_LOGIN_OLD_VERSION = 425,
-  ERR_LOGIN_TOKEN_WRONG = 426,
-  ERR_LOGIN_TOKEN_KICKED = 427,
   ERR_LOGIN_ALREADY_LOGIN = 428,
-  ERR_JOIN_CHANNEL_OTHER = 440,
-  ERR_SEND_MESSAGE_OTHER = 440,
-  ERR_SEND_MESSAGE_TIMEOUT = 441,
-  ERR_QUERY_USERNUM_OTHER = 450,
-  ERR_QUERY_USERNUM_TIMEOUT = 451,
-  ERR_QUERY_USERNUM_BYUSER = 452,
-  ERR_LEAVE_CHANNEL_OTHER = 460,
-  ERR_LEAVE_CHANNEL_KICKED = 461,
-  ERR_LEAVE_CHANNEL_BYUSER = 462,
-  ERR_LEAVE_CHANNEL_LOGOUT = 463,
-  ERR_LEAVE_CHANNEL_DISCONNECTED = 464,
-  ERR_INVITE_OTHER = 470,
-  ERR_INVITE_REINVITE = 471,
-  ERR_INVITE_NET = 472,
-  ERR_INVITE_PEER_OFFLINE = 473,
-  ERR_INVITE_TIMEOUT = 474,
-  ERR_INVITE_CANT_RECV = 475,
+
   /// @endcond
   // 1001~2000
   /**
@@ -779,31 +715,11 @@ enum ERROR_CODE_TYPE {
    */
   ERR_LOAD_MEDIA_ENGINE = 1001,
   /**
-   * 1002: Fails to start the call after enabling the media engine.
-   */
-  ERR_START_CALL = 1002,
-  /**
-   * 1003: Fails to start the camera.
-   */
-  ERR_START_CAMERA = 1003,
-  /**
-   * 1004: Fails to start the video rendering module.
-   */
-  ERR_START_VIDEO_RENDER = 1004,
-  /**
    * 1005: Audio device module: A general error occurs in the Audio Device Module (no specified
    * reason). Check if the audio device is used by another app, or try
    * rejoining the channel.
    */
   ERR_ADM_GENERAL_ERROR = 1005,
-  /**
-   * 1006: Audio Device Module: An error occurs in using the Java resources.
-   */
-  ERR_ADM_JAVA_RESOURCE = 1006,
-  /**
-   * 1007: Audio Device Module: An error occurs in setting the sample rate
-   */
-  ERR_ADM_SAMPLE_RATE = 1007,
   /**
    * 1008: Audio Device Module: An error occurs in initializing the playback
    * device.
@@ -831,279 +747,9 @@ enum ERROR_CODE_TYPE {
    */
   ERR_ADM_STOP_RECORDING = 1013,
   /**
-   * 1015: Audio Device Module: A playback error occurs. Check your playback
-   * device, or try rejoining the channel.
-   */
-  ERR_ADM_RUNTIME_PLAYOUT_ERROR = 1015,
-  /**
-   * 1017: Audio Device Module: A recording error occurs.
-   */
-  ERR_ADM_RUNTIME_RECORDING_ERROR = 1017,
-  /**
-   * 1018: Audio Device Module: The SDK fails to record audio.
-   */
-  ERR_ADM_RECORD_AUDIO_FAILED = 1018,
-  /**
-   * 1022: Audio Device Module: An error occurs in initializing the loopback
-   * device.
-   */
-  ERR_ADM_INIT_LOOPBACK = 1022,
-  /**
-   * 1023: Audio Device Module: An error occurs in starting the loopback
-   * device.
-   */
-  ERR_ADM_START_LOOPBACK = 1023,
-  /**
-   * 1027: Audio Device Module: No recording permission. Please check if the
-   * recording permission is granted.
-   */
-  ERR_ADM_NO_PERMISSION = 1027,
-  /**
-   * 1033: Audio device module: The device is occupied.
-   */
-  ERR_ADM_RECORD_AUDIO_IS_ACTIVE = 1033,
-  /**
-   * 1101: Audio device module: A fatal exception occurs.
-   */
-  ERR_ADM_ANDROID_JNI_JAVA_RESOURCE = 1101,
-  /**
-   * 1108: Audio device module: The recording frequency is lower than 50.
-   * 0 indicates that the recording is not yet started. Agora recommends
-   * checking your recording permission.
-   */
-  ERR_ADM_ANDROID_JNI_NO_RECORD_FREQUENCY = 1108,
-  /**
-   * 1109: The playback frequency is lower than 50. 0 indicates that the
-   * playback is not yet started. Agora recommends checking if you have created
-   * too many AudioTrack instances.
-   */
-  ERR_ADM_ANDROID_JNI_NO_PLAYBACK_FREQUENCY = 1109,
-  /**
-   * 1111: Audio device module: AudioRecord fails to start up. A ROM system
-   error occurs. Agora recommends the following options to debug:
-   - Restart your App.
-   - Restart your cellphone.
-   - Check your recording permission.
-   */
-  ERR_ADM_ANDROID_JNI_JAVA_START_RECORD = 1111,
-  /**
-   * 1112: Audio device module: AudioTrack fails to start up. A ROM system
-   error occurs. We recommend the following options to debug:
-   - Restart your App.
-   - Restart your cellphone.
-   - Check your playback permission.
-   */
-  ERR_ADM_ANDROID_JNI_JAVA_START_PLAYBACK = 1112,
-  /**
-   * 1115: Audio device module: AudioRecord returns error. The SDK will
-   * automatically restart AudioRecord.
-   */
-  ERR_ADM_ANDROID_JNI_JAVA_RECORD_ERROR = 1115,
-  /** @deprecated */
-  ERR_ADM_ANDROID_OPENSL_CREATE_ENGINE __deprecated = 1151,
-  /** @deprecated */
-  ERR_ADM_ANDROID_OPENSL_CREATE_AUDIO_RECORDER __deprecated = 1153,
-  /** @deprecated */
-  ERR_ADM_ANDROID_OPENSL_START_RECORDER_THREAD __deprecated = 1156,
-  /** @deprecated */
-  ERR_ADM_ANDROID_OPENSL_CREATE_AUDIO_PLAYER __deprecated = 1157,
-  /** @deprecated */
-  ERR_ADM_ANDROID_OPENSL_START_PLAYER_THREAD __deprecated = 1160,
-  /**
-   * 1201: Audio device module: The current device does not support audio
-   * input, possibly because you have mistakenly configured the audio session
-   * category, or because some other app is occupying the input device. Agora
-   * recommends terminating all background apps and re-joining the channel.
-   */
-  ERR_ADM_IOS_INPUT_NOT_AVAILABLE = 1201,
-  /**
-   * 1206: Audio device module: Cannot activate the audio session.
-   */
-  ERR_ADM_IOS_ACTIVATE_SESSION_FAIL = 1206,
-  /** @deprecated */
-  ERR_ADM_IOS_SESSION_SAMPLERATR_ZERO __deprecated = 1221,
-  /**
-   * 1301: Audio device module: An exception with the audio driver or a
-   * compatibility issue occurs.
-   *
-   * Solutions: Disable and restart the audio
-   * device, or reboot the system.
-   */
-  ERR_ADM_WIN_CORE_INIT = 1301,
-  /**
-   * 1303: Audio device module: An exception with the recording driver or a
-   * compatibility issue occurs.
-   *
-   * Solutions: Disable and restart the audio device, or reboot the system.
-   */
-  ERR_ADM_WIN_CORE_INIT_RECORDING = 1303,
-  /**
-   * 1306: Audio device module: An exception with the playback driver or a
-   * compatibility issue occurs.
-   *
-   * Solutions: Disable and restart the audio device, or reboot the system.
-   */
-  ERR_ADM_WIN_CORE_INIT_PLAYOUT = 1306,
-  /**
-   * 1307: Audio device module: No audio device is available.
-   *
-   * Solutions: Plug in a proper audio device.
-   */
-  ERR_ADM_WIN_CORE_INIT_PLAYOUT_NULL = 1307,
-  /**
-   * 1309: Audio device module: An exception with the audio driver or a
-   * compatibility issue occurs.
-   *
-   * Solutions: Disable and restart the audio device, or reboot the system.
-   */
-  ERR_ADM_WIN_CORE_START_RECORDING = 1309,
-  /**
-   * 1311: Audio device module: Insufficient system memory or poor device
-   * performance.
-   *
-   * Solutions: Reboot the system or replace the device.
-   */
-  ERR_ADM_WIN_CORE_CREATE_REC_THREAD = 1311,
-  /**
-   * 1314: Audio device module: An exception with the audio driver occurs.
-   *
-   * Solutions:
-   * - Disable and then re-enable the audio device.
-   * - Reboot the system.
-   * - Upgrade your audio card driver.
-   */
-  ERR_ADM_WIN_CORE_CAPTURE_NOT_STARTUP = 1314,
-  /**
-   * 1319: Audio device module: Insufficient system memory or poor device
-   * performance.
-   *
-   * Solutions: Reboot the system or replace the device.
-   */
-  ERR_ADM_WIN_CORE_CREATE_RENDER_THREAD = 1319,
-  /**
-   * 1320: Audio device module: An exception with the audio driver occurs.
-   *
-   * Solutions:
-   * - Disable and then re-enable the audio device.
-   * - Reboot the system.
-   * - Replace the device.
-   */
-  ERR_ADM_WIN_CORE_RENDER_NOT_STARTUP = 1320,
-  /**
-   * 1322: Audio device module: No audio recording device is available.
-   *
-   * Solutions: Plug in a proper recording device.
-   */
-  ERR_ADM_WIN_CORE_NO_RECORDING_DEVICE = 1322,
-  /**
-   * 1323: Audio device module: No audio playback device is available.
-   *
-   * Solutions: Plug in a proper playback device.
-   */
-  ERR_ADM_WIN_CORE_NO_PLAYOUT_DEVICE = 1323,
-  /**
-   * 1351: Audio device module: An exception with the audio driver or a
-   * compatibility issue occurs.
-   *
-   * Solutions:
-   * - Disable and then re-enable the audio device.
-   * - Reboot the system.
-   * - Upgrade your audio card driver.
-   */
-  ERR_ADM_WIN_WAVE_INIT = 1351,
-  /**
-   * 1353: Audio device module: An exception with the audio driver occurs.
-   *
-   * Solutions:
-   * - Disable and then re-enable the audio device.
-   * - Reboot the system.
-   * - Upgrade your audio card driver.
-   */
-  ERR_ADM_WIN_WAVE_INIT_RECORDING = 1353,
-  /**
-   * 1354: Audio device module: An exception with the audio driver occurs.
-   *
-   * Solutions:
-   * - Disable and then re-enable the audio device.
-   * - Reboot the system.
-   * - Upgrade your audio card driver.
-   */
-  ERR_ADM_WIN_WAVE_INIT_MICROPHONE = 1354,
-  /**
-   * 1355: Audio device module: An exception with the audio driver occurs.
-   *
-   * Solutions:
-   * - Disable and then re-enable the audio device.
-   * - Reboot the system.
-   * - Upgrade your audio card driver.
-   */
-  ERR_ADM_WIN_WAVE_INIT_PLAYOUT = 1355,
-  /**
-   * 1356: Audio device module: An exception with the audio driver occurs.
-   *
-   * Solutions:
-   * - Disable and then re-enable the audio device.
-   * - Reboot the system.
-   * - Upgrade your audio card driver.
-   */
-  ERR_ADM_WIN_WAVE_INIT_SPEAKER = 1356,
-  /**
-   * 1357: Audio device module: An exception with the audio driver occurs.
-   *
-   * Solutions:
-   * - Disable and then re-enable the audio device.
-   * - Reboot the system.
-   * - Upgrade your audio card driver.
-   */
-  ERR_ADM_WIN_WAVE_START_RECORDING = 1357,
-  /**
-   * 1358: Audio device module: An exception with the audio driver occurs.
-   *
-   * Solutions:
-   * - Disable and then re-enable the audio device.
-   * - Reboot the system.
-   * - Upgrade your audio card driver.
-   */
-  ERR_ADM_WIN_WAVE_START_PLAYOUT = 1358,
-  /**
-   * 1359: Audio Device Module: No recording device.
-   */
-  ERR_ADM_NO_RECORDING_DEVICE = 1359,
-  /**
-   * 1360: Audio Device Module: No playback device.
-   */
-  ERR_ADM_NO_PLAYOUT_DEVICE = 1360,
-
-  // VDM error code starts from 1500
-  /**
    * 1501: Video Device Module: The camera is not authorized.
    */
   ERR_VDM_CAMERA_NOT_AUTHORIZED = 1501,
-
-  // VDM error code starts from 1500
-  /**
-   * 1501: Video Device Module: The camera is in use.
-   */
-  ERR_VDM_WIN_DEVICE_IN_USE = 1502,
-
-  // VCM error code starts from 1600
-  /**
-   * 1600: Video Device Module: An unknown error occurs.
-   */
-  ERR_VCM_UNKNOWN_ERROR = 1600,
-  /**
-   * 1601: Video Device Module: An error occurs in initializing the video
-   * encoder.
-   */
-  ERR_VCM_ENCODER_INIT_ERROR = 1601,
-  /**
-   * 1602: Video Device Module: An error occurs in encoding.
-   */
-  ERR_VCM_ENCODER_ENCODE_ERROR = 1602,
-  /**
-   * 1603: Video Device Module: An error occurs in setting the video encoder.
-   */
-  ERR_VCM_ENCODER_SET_ERROR = 1603,
 };
 
 /**
@@ -1199,6 +845,8 @@ enum INTERFACE_ID_TYPE {
   AGORA_IID_CLOUD_SPATIAL_AUDIO = 10,
   AGORA_IID_LOCAL_SPATIAL_AUDIO = 11,
   AGORA_IID_MEDIA_RECORDER = 12,
+  AGORA_IID_STATE_SYNC = 13,
+  AGORA_IID_METACHAT_SERVICE = 14,
 };
 
 /**
@@ -1711,7 +1359,6 @@ struct EncodedAudioFrameAdvancedSettings {
    * - false: Do not send the audio frame when it is empty.
    */
   bool sendEvenIfEmpty;
-
 };
 
 /**
@@ -1829,22 +1476,15 @@ struct VideoSubscriptionOptions {
      * The default value is `VIDEO_STREAM_HIGH`, which means the high-quality
      * video stream.
      */
-    VIDEO_STREAM_TYPE type;
+    Optional<VIDEO_STREAM_TYPE> type;
     /**
      * Whether to subscribe to encoded video data only:
      * - `true`: Subscribe to encoded video data only.
      * - `false`: (Default) Subscribe to decoded video data.
      */
-    bool encodedFrameOnly;
+    Optional<bool> encodedFrameOnly;
 
-    VideoSubscriptionOptions() : type(VIDEO_STREAM_HIGH),
-                                 encodedFrameOnly(false) {}
-
-    explicit VideoSubscriptionOptions(VIDEO_STREAM_TYPE streamtype) : type(streamtype),
-                                                             encodedFrameOnly(false) {}
-
-    VideoSubscriptionOptions(VIDEO_STREAM_TYPE streamtype, bool encoded_only) : type(streamtype),
-                                                                                encodedFrameOnly(encoded_only) {}
+    VideoSubscriptionOptions() {}
 };
 
 /**
@@ -2117,12 +1757,30 @@ struct VideoEncoderConfiguration {
 /** Data stream config
 */
 struct DataStreamConfig {
-   /** syncWithAudio Sets whether or not the recipients receive the data stream sync with current audio stream.
-    */
-   bool syncWithAudio;
-   /** ordered Sets whether or not the recipients receive the data stream in the sent order:
-    */
-   bool ordered;
+  /** syncWithAudio Sets whether or not the recipients receive the data stream sync with current audio stream.
+  */
+  bool syncWithAudio;
+  /** ordered Sets whether or not the recipients receive the data stream in the sent order:
+  */
+  bool ordered;
+};
+
+/**
+ * The definition of SIMULCAST_STREAM_MODE
+ */
+enum SIMULCAST_STREAM_MODE {
+  /*
+  * disable simulcast stream until receive request for enable simulcast stream by other broadcaster
+  */
+  AUTO_SIMULCAST_STREAM = -1,
+  /*
+  * disable simulcast stream
+  */
+  DISABLE_SIMULCAST_STREM = 0,
+  /*
+  * always enable simulcast stream
+  */
+  ENABLE_SIMULCAST_STREAM = 1,
 };
 
 /**
@@ -2136,14 +1794,14 @@ struct SimulcastStreamConfig {
   /**
    * The video bitrate (Kbps).
    */
-  int bitrate;
+  int kBitrate;
   /**
    * The video framerate.
    */
   int framerate;
-  SimulcastStreamConfig() : dimensions(160, 120), bitrate(65), framerate(5) {}
+  SimulcastStreamConfig() : dimensions(160, 120), kBitrate(65), framerate(5) {}
   bool operator==(const SimulcastStreamConfig& rhs) const {
-    return dimensions == rhs.dimensions && bitrate == rhs.bitrate && framerate == rhs.framerate;
+    return dimensions == rhs.dimensions && kBitrate == rhs.kBitrate && framerate == rhs.framerate;
   }
 };
 
@@ -2296,7 +1954,7 @@ struct RtcStats {
    * The system CPU usage (%).
    */
   double cpuTotalUsage;
-  /** 
+  /**
    * gateway Rtt
   */
   int gatewayRtt;
@@ -2412,39 +2070,39 @@ struct RtcStats {
 enum VIDEO_SOURCE_TYPE {
   /** Video captured by the camera.
    */
-  VIDEO_SOURCE_CAMERA_PRIMARY,
+  VIDEO_SOURCE_CAMERA_PRIMARY = 0,
   VIDEO_SOURCE_CAMERA = VIDEO_SOURCE_CAMERA_PRIMARY,
   /** Video captured by the secondary camera.
    */
-  VIDEO_SOURCE_CAMERA_SECONDARY,
+  VIDEO_SOURCE_CAMERA_SECONDARY = 1,
   /** Video for screen sharing.
    */
-  VIDEO_SOURCE_SCREEN_PRIMARY,
+  VIDEO_SOURCE_SCREEN_PRIMARY = 2,
   VIDEO_SOURCE_SCREEN = VIDEO_SOURCE_SCREEN_PRIMARY,
   /** Video for secondary screen sharing.
    */
-  VIDEO_SOURCE_SCREEN_SECONDARY,
+  VIDEO_SOURCE_SCREEN_SECONDARY = 3,
   /** Not define.
    */
-  VIDEO_SOURCE_CUSTOM,
+  VIDEO_SOURCE_CUSTOM = 4,
   /** Video for media player sharing.
    */
-  VIDEO_SOURCE_MEDIA_PLAYER,
+  VIDEO_SOURCE_MEDIA_PLAYER = 5,
   /** Video for png image.
    */
-  VIDEO_SOURCE_RTC_IMAGE_PNG,
+  VIDEO_SOURCE_RTC_IMAGE_PNG = 6,
   /** Video for png image.
    */
-  VIDEO_SOURCE_RTC_IMAGE_JPEG,
+  VIDEO_SOURCE_RTC_IMAGE_JPEG = 7,
   /** Video for png image.
    */
-  VIDEO_SOURCE_RTC_IMAGE_GIF,
+  VIDEO_SOURCE_RTC_IMAGE_GIF = 8,
   /** Remote video received from network.
    */
-  VIDEO_SOURCE_REMOTE,
+  VIDEO_SOURCE_REMOTE = 9,
   /** Video for transcoded.
    */
-  VIDEO_SOURCE_TRANSCODED,
+  VIDEO_SOURCE_TRANSCODED = 10,
 
   VIDEO_SOURCE_UNKNOWN = 100
 };
@@ -2491,6 +2149,7 @@ struct ClientRoleOptions
   Audience latency level.
   */
   AUDIENCE_LATENCY_LEVEL_TYPE audienceLatencyLevel;
+
   ClientRoleOptions()
     : audienceLatencyLevel(AUDIENCE_LATENCY_LEVEL_ULTRA_LOW_LATENCY) {}
 };
@@ -2734,7 +2393,7 @@ struct VideoFormat {
   VideoFormat() : width(FRAME_WIDTH_640), height(FRAME_HEIGHT_360), fps(FRAME_RATE_FPS_15) {}
   VideoFormat(int w, int h, int f) : width(w), height(h), fps(f) {}
 
-  bool operator <(const VideoFormat& fmt) const {
+  bool operator<(const VideoFormat& fmt) const {
     if (height != fmt.height) {
       return height < fmt.height;
     } else if (width != fmt.width) {
@@ -2742,6 +2401,12 @@ struct VideoFormat {
     } else {
       return fps < fmt.fps;
     }
+  }
+  bool operator==(const VideoFormat& fmt) const {
+    return width == fmt.width && height == fmt.height && fps == fmt.fps;
+  }
+  bool operator!=(const VideoFormat& fmt) const {
+    return !operator==(fmt);
   }
 };
 
@@ -4055,37 +3720,37 @@ enum CLIENT_ROLE_CHANGE_FAILED_REASON {
   CLIENT_ROLE_CHANGE_FAILED_CONNECTION_FAILED = 4,
 };
 
-/** 
+/**
  * The reason of notifying the user of a message.
  */
 enum WLACC_MESSAGE_REASON {
-  /** 
+  /**
    * WIFI signal is weak.
    */
   WLACC_MESSAGE_REASON_WEAK_SIGNAL = 0,
-  /** 
+  /**
    * Channel congestion.
    */
   WLACC_MESSAGE_REASON_CHANNEL_CONGESTION = 1,
 };
 
-/** 
+/**
  * Suggest an action for the user.
  */
 enum WLACC_SUGGEST_ACTION {
-  /** 
+  /**
    * Please get close to AP.
    */
   WLACC_SUGGEST_ACTION_CLOSE_TO_WIFI = 0,
-  /** 
+  /**
    * The user is advised to connect to the prompted SSID.
    */
   WLACC_SUGGEST_ACTION_CONNECT_SSID = 1,
-  /** 
+  /**
    * The user is advised to check whether the AP supports 5G band and enable 5G band (the aciton link is attached), or purchases an AP that supports 5G. AP does not support 5G band.
    */
   WLACC_SUGGEST_ACTION_CHECK_5G = 2,
-  /** 
+  /**
    * The user is advised to change the SSID of the 2.4G or 5G band (the aciton link is attached). The SSID of the 2.4G band AP is the same as that of the 5G band.
    */
   WLACC_SUGGEST_ACTION_MODIFY_SSID = 3,
@@ -4397,43 +4062,8 @@ struct VirtualBackgroundSource {
 
   /** blur degree */
   BACKGROUND_BLUR_DEGREE blur_degree;
-  
-  VirtualBackgroundSource() : background_source_type(BACKGROUND_COLOR), color(0xffffff), source(NULL),  blur_degree(BLUR_DEGREE_HIGH) {}
-};
 
-struct FishCorrectionParams {
-  float _x_center;
-  float _y_center;
-  float _scale_factor;
-  float _focal_length;
-  float _pol_focal_length;
-  float _split_height;
-  float _ss[5];
-  FishCorrectionParams():_x_center(0.49),
-                         _y_center(0.48),
-                         _scale_factor(4.5),
-                         _focal_length(31),
-                         _pol_focal_length(31),
-                         _split_height(1.0) {
-    _ss[0] = 0.9375;
-    _ss[1] = 0.0;
-    _ss[2] = -2.9440;
-    _ss[3] = 5.7344;
-    _ss[4] = -4.4564;
-  }
-  FishCorrectionParams(float x_center, float y_center, float scale_factor, float focal_length, float pol_focal_length, float split_height, float ss[])
-  : _x_center(x_center),
-    _y_center(y_center),
-    _scale_factor(scale_factor),
-    _focal_length(focal_length),
-    _pol_focal_length(pol_focal_length),
-    _split_height(split_height) {
-    if (ss != OPTIONAL_NULLPTR) {
-      for (int i = 0; i < 5; i++) {
-        _ss[i] = ss[i];
-      }
-    }
-  }
+  VirtualBackgroundSource() : background_source_type(BACKGROUND_COLOR), color(0xffffff), source(NULL),  blur_degree(BLUR_DEGREE_HIGH) {}
 };
 
 struct SegmentationProperty {
@@ -4443,9 +4073,9 @@ struct SegmentationProperty {
     SEG_MODEL_AI = 1,
     SEG_MODEL_GREEN = 2
   };
-  
+
   SEG_MODEL_TYPE modelType;
-  
+
   float greenCapacity;
 
 
@@ -4782,7 +4412,7 @@ struct ScreenCaptureParameters {
    * The number of windows to be blocked.
    */
   int excludeWindowCount;
-    
+
     /** (macOS only) The width (px) of the border. Defaults to 0, and the value range is [0,50].
      *
      */
@@ -5605,7 +5235,7 @@ struct ScreenVideoParameters {
    * profiles](https://docs.agora.io/en/Interactive%20Broadcast/game_streaming_video_profile?platform=Android#recommended-video-profiles).
    */
   int bitrate;
-  /* 
+  /*
    * The content hint of the screen sharing:
    */
   VIDEO_CONTENT_HINT contentHint = VIDEO_CONTENT_HINT::CONTENT_HINT_MOTION;
@@ -5663,7 +5293,7 @@ struct ScreenCaptureParameters2 {
    */
   bool captureVideo = true;
   /**
-   * The video configuration for the shared screen stream. 
+   * The video configuration for the shared screen stream.
    */
   ScreenVideoParameters videoParams;
 };

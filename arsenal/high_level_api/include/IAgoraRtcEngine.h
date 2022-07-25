@@ -11,6 +11,7 @@
 #include "AgoraOptional.h"
 #include "IAudioDeviceManager.h"
 #include "IAgoraRhythmPlayer.h"
+#include "IAgoraMediaEngine.h"
 
 namespace agora {
 namespace rtc {
@@ -321,8 +322,8 @@ struct LocalVideoStats
     /** The brightness level of the video image captured by the local camera. See #CAPTURE_BRIGHTNESS_LEVEL_TYPE.
      */
     CAPTURE_BRIGHTNESS_LEVEL_TYPE captureBrightnessLevel;
-    /** 
-     * Whether we send dual stream now. 
+    /**
+     * Whether we send dual stream now.
      */
     bool dualStreamEnabled;
 };
@@ -741,7 +742,8 @@ struct AdvancedAudioOptions {
 struct ImageTrackOptions {
   const char* imageUrl;
   int fps;
-  ImageTrackOptions() : imageUrl(NULL), fps(1) {}
+  VIDEO_MIRROR_MODE_TYPE mirrorMode;
+  ImageTrackOptions() : imageUrl(NULL), fps(1), mirrorMode(VIDEO_MIRROR_MODE_DISABLED) {}
 };
 
 /**
@@ -868,12 +870,6 @@ struct ChannelMediaOptions {
    */
   Optional<bool> autoSubscribeVideo;
   /**
-   * Determines whether to start preview when join channel if canvas have been set.
-   * - true: (Default) start preview when join channel.
-   * - false: Do not start preview.
-   */
-  Optional<bool> startPreview;
-  /**
    * Determines whether to enable audio recording or playout.
    * - true: It's used to publish audio and mix microphone, or subscribe audio and playout
    * - false: It's used to publish extenal audio frame only without mixing microphone, or no need audio device to playout audio either
@@ -975,7 +971,6 @@ struct ChannelMediaOptions {
       SET_FROM(publishMediaPlayerVideoTrack);
       SET_FROM(autoSubscribeAudio);
       SET_FROM(autoSubscribeVideo);
-      SET_FROM(startPreview);
       SET_FROM(publishMediaPlayerId);
       SET_FROM(enableAudioRecordingOrPlayout);
       SET_FROM(clientRoleType);
@@ -1021,7 +1016,6 @@ struct ChannelMediaOptions {
       ADD_COMPARE(publishMediaPlayerVideoTrack);
       ADD_COMPARE(autoSubscribeAudio);
       ADD_COMPARE(autoSubscribeVideo);
-      ADD_COMPARE(startPreview);
       ADD_COMPARE(publishMediaPlayerId);
       ADD_COMPARE(enableAudioRecordingOrPlayout);
       ADD_COMPARE(clientRoleType);
@@ -1070,7 +1064,6 @@ struct ChannelMediaOptions {
         REPLACE_BY(publishMediaPlayerVideoTrack);
         REPLACE_BY(autoSubscribeAudio);
         REPLACE_BY(autoSubscribeVideo);
-        REPLACE_BY(startPreview);
         REPLACE_BY(publishMediaPlayerId);
         REPLACE_BY(enableAudioRecordingOrPlayout);
         REPLACE_BY(clientRoleType);
@@ -1237,8 +1230,8 @@ class IRtcEngineEventHandler {
 
   /** An error occurs during the SDK runtime.
 
-  @param err The error code.
-  @param msg The detailed error message: #ERROR_CODE_TYPE.
+  @param err The error code: #ERROR_CODE_TYPE.
+  @param msg The detailed error message.
   */
   virtual void onError(int err, const char* msg) {
     (void)err;
@@ -1361,6 +1354,14 @@ class IRtcEngineEventHandler {
     (void)deviceState;
   }
 
+  /**
+   * @brief Reports current AudioMixing progress.
+   *
+   * The callback occurs once every one second during the playback and reports the current playback progress.
+   * @param position Current AudioMixing progress (millisecond).
+   */
+  virtual void onAudioMixingPositionChanged(int64_t position) {}
+
   /** Occurs when the audio mixing file playback finishes.
    @deprecated This method is deprecated, use onAudioMixingStateChanged instead.
 
@@ -1468,18 +1469,20 @@ class IRtcEngineEventHandler {
    * `joinChannel` method, then `elapsed` is the time elapsed from calling the
    * `startPreview` method until the SDK triggers this callback.
    */
-  virtual void onFirstLocalVideoFrame(int width, int height, int elapsed) {
+  virtual void onFirstLocalVideoFrame(VIDEO_SOURCE_TYPE source, int width, int height, int elapsed) {
+    (void)source;
     (void)width;
     (void)height;
     (void)elapsed;
   }
 
   /** Occurs when the first local video frame is published.
-
-  @param elapsed The time elapsed (ms) from the local user calling
-  \ref IRtcEngine::joinChannel "joinChannel" to the SDK triggers this callback.
+   * @param source source type of the originated video source.
+   * @param elapsed The time elapsed (ms) from the local user calling
+   * \ref IRtcEngine::joinChannel "joinChannel" to the SDK triggers this callback.
   */
-  virtual void onFirstLocalVideoFramePublished(int elapsed) {
+  virtual void onFirstLocalVideoFramePublished(VIDEO_SOURCE_TYPE source, int elapsed) {
+    (void)source;
     (void)elapsed;
   }
 
@@ -1526,10 +1529,12 @@ class IRtcEngineEventHandler {
    * @note For some device models, the SDK will not trigger this callback when the state of the local video changes
    * while the local video capturing device is in use, so you have to make your own timeout judgment.
    *
+   * @param source source type of the orignated video source.
    * @param state State type #LOCAL_VIDEO_STREAM_STATE. When the state is LOCAL_VIDEO_STREAM_STATE_FAILED (3), see the `error` parameter for details.
    * @param error The detailed error information: #LOCAL_VIDEO_STREAM_ERROR.
    */
-  virtual void onLocalVideoStateChanged(LOCAL_VIDEO_STREAM_STATE state, LOCAL_VIDEO_STREAM_ERROR error) {
+  virtual void onLocalVideoStateChanged(VIDEO_SOURCE_TYPE source, LOCAL_VIDEO_STREAM_STATE state, LOCAL_VIDEO_STREAM_ERROR error) {
+    (void)source;
     (void)state;
     (void)error;
   }
@@ -1744,9 +1749,11 @@ class IRtcEngineEventHandler {
    * method, this callback reports the statistics of the high-video
    * stream (high bitrate, and high-resolution video stream).
    *
+   * @param source source type of the originated video source
    * @param stats Statistics of the local video stream. See LocalVideoStats.
    */
-  virtual void onLocalVideoStats(const LocalVideoStats& stats) {
+  virtual void onLocalVideoStats(VIDEO_SOURCE_TYPE source, const LocalVideoStats& stats) {
+    (void)source;
     (void)stats;
   }
 
@@ -2021,8 +2028,7 @@ class IRtcEngineEventHandler {
    * @param height image height
    * @param errCode 0 is ok negative is error
    */
-  virtual void onSnapshotTaken(const char* channel, uid_t uid, const char* filePath, int width, int height, int errCode) {
-    (void)channel;
+  virtual void onSnapshotTaken(uid_t uid, const char* filePath, int width, int height, int errCode) {
     (void)uid;
     (void)filePath;
     (void)width;
@@ -2094,60 +2100,6 @@ class IRtcEngineEventHandler {
   virtual void onRtmpStreamingEvent(const char* url, RTMP_STREAMING_EVENT eventCode) {
     (void)url;
     (void)eventCode;
-  }
-
-  /**
-   * Reports the result of calling the \ref IRtcEngine::addPublishStreamUrl
-   * "addPublishStreamUrl()" method.
-   * @deprecated Use \ref onRtmpStreamingStateChanged "onRtmpStreamingStateChanged" instead.
-   *
-   * This callback indicates whether you have successfully added an RTMP stream to
-   * the CDN.
-   *
-   * @param url The RTMP URL address.
-   * @param error The error code. Main errors include:
-   * - ERR_OK(0): The publishing succeeded.
-   * - ERR_FAILED(1): The publishing failed.
-   * - ERR_INVALID_ARGUMENT(2): Invalid argument used. If, for example, you have
-   * not called \ref IRtcEngine::setLiveTranscoding "setLiveTranscoding" to
-   * configure LiveTranscoding before calling \ref IRtcEngine::addPublishStreamUrl
-   * "addPublishStreamUrl".
-   * - ERR_TIMEOUT(10): The publishing timed out.
-   * - ERR_ALREADY_IN_USE(19): The chosen HTTP/HTTPS URL address is already in use
-   * for CDN live streaming.
-   * - ERR_ENCRYPTED_STREAM_NOT_ALLOWED_PUBLISHED(130): You cannot publish an
-   * encrypted stream.
-   * - ERR_PUBLISH_STREAM_CDN_ERROR(151): CDN related errors. Remove the original
-   * URL address and add a new one by calling the
-   * \ref IRtcEngine::removePublishStreamUrl "removePublishStreamUrl()" and
-   * \ref IRtcEngine::addPublishStreamUrl "addPublishStreamUrl()" methods.
-   * - ERR_PUBLISH_STREAM_NUM_REACH_LIMIT(152): The host manipulates more than 10
-   * URLs. Delete the unnecessary URLs before adding new ones.
-   * - ERR_PUBLISH_STREAM_NOT_AUTHORIZED(153): The host manipulates other hosts'
-   * URLs. Check your app logic.
-   * - ERR_PUBLISH_STREAM_INTERNAL_SERVER_ERROR(154): An error occurs in Agora's
-   * streaming server. Call the \ref IRtcEngine::addPublishStreamUrl
-   * "addPublishStreamUrl()" method to publish the streaming again.
-   * - ERR_PUBLISH_STREAM_FORMAT_NOT_SUPPORTED(156): The format of the RTMP stream
-   * URL is not supported. Check whether the URL format is correct.
-   */
-  virtual void onStreamPublished(const char* url, int error) __deprecated {
-    (void)url;
-    (void)error;
-  }
-
-  /**
-   * Reports the result of calling the \ref IRtcEngine::removePublishStreamUrl "removePublishStreamUrl()"
-   * method.
-   *
-   * @deprecated Use \ref onRtmpStreamingStateChanged "onRtmpStreamingStateChanged" instead.
-   *
-   * This callback indicates whether you have successfully removed an RTMP stream from the CDN.
-   *
-   * @param url The RTMP URL address.
-   */
-  virtual void onStreamUnpublished(const char* url) __deprecated {
-    (void)url;
   }
 
   /**
@@ -2305,7 +2257,7 @@ class IRtcEngineEventHandler {
   }
 
   /** Occurs when the WIFI message need be sent to the user.
-   * 
+   *
    * @param reason The reason of notifying the user of a message.
    * @param action Suggest an action for the user.
    * @param wlAccMsg The message content of notifying the user.
@@ -2317,7 +2269,7 @@ class IRtcEngineEventHandler {
   }
 
   /** Occurs when SDK statistics wifi acceleration optimization effect.
-   * 
+   *
    * @param currentStats Instantaneous value of optimization effect.
    * @param averageStats Average value of cumulative optimization effect.
    */
@@ -2439,40 +2391,42 @@ class IRtcEngineEventHandler {
   /**
    * Occurs when the video publish state changed.
    *
+   * @param source source type of the originated video source.
    * @param channel The channel name of user joined.
    * @param oldState The old state of the video stream publish : #STREAM_PUBLISH_STATE.
    * @param newState The new state of the video stream publish : #STREAM_PUBLISH_STATE.
    * @param elapseSinceLastState The time elapsed (ms) from the old state to the new state.
    */
-  virtual void onVideoPublishStateChanged(const char* channel, STREAM_PUBLISH_STATE oldState, STREAM_PUBLISH_STATE newState, int elapseSinceLastState) {
+  virtual void onVideoPublishStateChanged(VIDEO_SOURCE_TYPE source, const char* channel, STREAM_PUBLISH_STATE oldState, STREAM_PUBLISH_STATE newState, int elapseSinceLastState) {
+    (void)source;
     (void)channel;
     (void)oldState;
     (void)newState;
     (void)elapseSinceLastState;
   }
 
-  virtual void onExtensionEvent(const char* provider, const char* ext_name, const char* key, const char* value) {
+  virtual void onExtensionEvent(const char* provider, const char* extension, const char* key, const char* value) {
     (void)provider;
-    (void)ext_name;
+    (void)extension;
     (void)key;
     (void)value;
   }
 
-  virtual void onExtensionStarted(const char* provider, const char* ext_name) {
+  virtual void onExtensionStarted(const char* provider, const char* extension) {
     (void)provider;
-    (void)ext_name;
+    (void)extension;
   }
 
-  virtual void onExtensionStopped(const char* provider, const char* ext_name) {
+  virtual void onExtensionStopped(const char* provider, const char* extension) {
     (void)provider;
-    (void)ext_name;
+    (void)extension;
   }
 
-  virtual void onExtensionErrored(const char* provider, const char* ext_name, int error, const char* msg) {
+  virtual void onExtensionError(const char* provider, const char* extension, int error, const char* message) {
     (void)provider;
-    (void)ext_name;
+    (void)extension;
     (void)error;
-    (void)msg;
+    (void)message;
   }
 
   virtual void onUserAccountUpdated(uid_t uid, const char* userAccount){
@@ -4273,8 +4227,7 @@ class IRtcEngine : public agora::base::IEngineBase {
   /** Starts playing and mixing the music file.
 
   This method mixes the specified local audio file with the audio stream from
-  the microphone, or replaces the microphone's audio stream with the specified
-  local audio file. You can choose whether the other user can hear the local
+  the microphone. You can choose whether the other user can hear the local
   audio playback and specify the number of playback loops. This method also
   supports online music playback.
 
@@ -4303,12 +4256,6 @@ class IRtcEngine : public agora::base::IEngineBase {
   @param loopback Sets which user can hear the audio mixing:
   - true: Only the local user can hear the audio mixing.
   - false: Both users can hear the audio mixing.
-
-  @param replace Sets the audio mixing content:
-  - true: Only publish the specified audio file. The audio stream from the
-  microphone is not published.
-  - false: The local audio file is mixed with the audio stream from the
-  microphone.
 
   @param cycle Sets the number of playback loops:
   - Positive integer: Number of playback loops.
@@ -4318,13 +4265,12 @@ class IRtcEngine : public agora::base::IEngineBase {
   - 0: Success.
   - < 0: Failure.
   */
-  virtual int startAudioMixing(const char* filePath, bool loopback, bool replace, int cycle) = 0;
+  virtual int startAudioMixing(const char* filePath, bool loopback, int cycle) = 0;
 
   /** Starts playing and mixing the music file.
 
   This method mixes the specified local audio file with the audio stream from
-  the microphone, or replaces the microphone's audio stream with the specified
-  local audio file. You can choose whether the other user can hear the local
+  the microphone. You can choose whether the other user can hear the local
   audio playback and specify the number of playback loops. This method also
   supports online music playback.
 
@@ -4353,12 +4299,6 @@ class IRtcEngine : public agora::base::IEngineBase {
   @param loopback Sets which user can hear the audio mixing:
   - true: Only the local user can hear the audio mixing.
   - false: Both users can hear the audio mixing.
-
-  @param replace Sets the audio mixing content:
-  - true: Only publish the specified audio file. The audio stream from the
-  microphone is not published.
-  - false: The local audio file is mixed with the audio stream from the
-  microphone.
 
   @param cycle Sets the number of playback loops:
   - Positive integer: Number of playback loops.
@@ -4370,7 +4310,7 @@ class IRtcEngine : public agora::base::IEngineBase {
   - 0: Success.
   - < 0: Failure.
   */
-  virtual int startAudioMixing(const char* filePath, bool loopback, bool replace, int cycle, int startPos) = 0;
+  virtual int startAudioMixing(const char* filePath, bool loopback, int cycle, int startPos) = 0;
 
   /** Stops playing and mixing the music file.
 
@@ -4515,7 +4455,7 @@ class IRtcEngine : public agora::base::IEngineBase {
    - 0: Success.
    - < 0: Failure.
    */
-  virtual int setAudioMixingDualMonoMode(int mode) = 0;
+  virtual int setAudioMixingDualMonoMode(media::AUDIO_MIXING_DUAL_MONO_MODE mode) = 0;
 
   /** Sets the pitch of the local music file.
    *
@@ -4736,7 +4676,57 @@ class IRtcEngine : public agora::base::IEngineBase {
    * - < 0: Failure.
    */
   virtual int unloadAllEffects() = 0;
-
+  /**
+   * Gets the duration of the audio effect file.
+   * @note
+   * - Call this method after joining a channel.
+   * - For the audio file formats supported by this method, see [What formats of audio files does the Agora RTC SDK support](https://docs.agora.io/en/faq/audio_format).
+   *
+   * @param filePath The absolute path or URL address (including the filename extensions)
+   * of the music file. For example: `C:\music\audio.mp4`.
+   * When you access a local file on Android, Agora recommends passing a URI address or the path starts
+   * with `/assets/` in this parameter.
+   *
+   * @return
+   * - &ge; 0: A successful method call. Returns the total duration (ms) of
+   * the specified audio effect file.
+   * - < 0: Failure.
+   *  - `-22(ERR_RESOURCE_LIMITED)`: Cannot find the audio effect file. Please
+   * set a correct `filePath`.
+   */
+  virtual int getEffectDuration(const char* filePath) = 0;
+  /**
+   * Sets the playback position of an audio effect file.
+   * After a successful setting, the local audio effect file starts playing at the specified position.
+   *
+   * @note Call this method after \ref IRtcEngine::playEffect(int,const char*,int,double,double,int,bool,int) "playEffect" .
+   *
+   * @param soundId Audio effect ID. Ensure that this parameter is set to the
+   * same value as in \ref IRtcEngine::playEffect(int,const char*,int,double,double,int,bool,int) "playEffect" .
+   * @param pos The playback position (ms) of the audio effect file.
+   *
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   *  - `-22(ERR_RESOURCE_LIMITED)`: Cannot find the audio effect file. Please
+   * set a correct `soundId`.
+   */
+  virtual int setEffectPosition(int soundId, int pos) = 0;
+  /**
+   * Gets the playback position of the audio effect file.
+   * @note Call this method after \ref IRtcEngine::playEffect(int,const char*,int,double,double,int,bool,int) "playEffect" .
+   *
+   * @param soundId Audio effect ID. Ensure that this parameter is set to the
+   * same value as in \ref IRtcEngine::playEffect(int,const char*,int,double,double,int,bool,int) "playEffect" .
+   *
+   * @return
+   * - &ge; 0: A successful method call. Returns the playback position (ms) of
+   * the specified audio effect file.
+   * - < 0: Failure.
+   *  - `-22(ERR_RESOURCE_LIMITED)`: Cannot find the audio effect file. Please
+   * set a correct `soundId`.
+   */
+  virtual int getEffectCurrentPosition(int soundId) = 0;
   /** Enables/Disables stereo panning for remote users.
 
    Ensure that you call this method before joinChannel to enable stereo panning for remote users so that the local user can track the position of a remote user by calling \ref agora::rtc::IRtcEngine::setRemoteVoicePosition "setRemoteVoicePosition".
@@ -5266,26 +5256,6 @@ class IRtcEngine : public agora::base::IEngineBase {
    * (high-resolution high-bitrate video stream) or low-stream (low-resolution low-bitrate video stream)
    * video using \ref setRemoteVideoStreamType "setRemoteVideoStreamType".
    *
-   * @param sourceType
-   * - The video source type.
-   * @param enabled
-   * - true: Enable the dual-stream mode.
-   * - false: (default) Disable the dual-stream mode.
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   */
-  virtual int enableDualStreamMode(VIDEO_SOURCE_TYPE sourceType, bool enabled) = 0;
-
-  /**
-   * Enables or disables the dual video stream mode.
-   *
-   * If dual-stream mode is enabled, the subscriber can choose to receive the high-stream
-   * (high-resolution high-bitrate video stream) or low-stream (low-resolution low-bitrate video stream)
-   * video using \ref setRemoteVideoStreamType "setRemoteVideoStreamType".
-   *
-   * @param sourceType
-   * - The video source type.
    * @param enabled
    * - true: Enable the dual-stream mode.
    * - false: (default) Disable the dual-stream mode.
@@ -5295,7 +5265,41 @@ class IRtcEngine : public agora::base::IEngineBase {
    * - 0: Success.
    * - < 0: Failure.
    */
-  virtual int enableDualStreamMode(VIDEO_SOURCE_TYPE sourceType, bool enabled, const SimulcastStreamConfig& streamConfig) = 0;
+  virtual int enableDualStreamMode(bool enabled, const SimulcastStreamConfig& streamConfig) = 0;
+
+
+  /**
+   * Enables, disables or auto enable the dual video stream mode.
+   *
+   * If dual-stream mode is enabled, the subscriber can choose to receive the high-stream
+   * (high-resolution high-bitrate video stream) or low-stream (low-resolution low-bitrate video stream)
+   * video using \ref setRemoteVideoStreamType "setRemoteVideoStreamType".
+   * 
+   * @param mode
+   * - The dual stream mode
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+  virtual int setDualStreamMode(SIMULCAST_STREAM_MODE mode) = 0;
+
+  /**
+   * Enables, disables or auto enable the dual video stream mode.
+   *
+   * If dual-stream mode is enabled, the subscriber can choose to receive the high-stream
+   * (high-resolution high-bitrate video stream) or low-stream (low-resolution low-bitrate video stream)
+   * video using \ref setRemoteVideoStreamType "setRemoteVideoStreamType".
+   *
+     * @param mode
+   * - dual stream mode
+   * @param streamConfig
+   * - The minor stream config
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+  virtual int setDualStreamMode(SIMULCAST_STREAM_MODE mode,
+                                 const SimulcastStreamConfig& streamConfig) = 0;
 
 
   virtual int enableEchoCancellationExternal(bool enabled, int audioSourceDelay) = 0;
@@ -5413,6 +5417,29 @@ class IRtcEngine : public agora::base::IEngineBase {
   * - < 0: Failure.
   */
   virtual int setMixedAudioFrameParameters(int sampleRate, int channel, int samplesPerCall) = 0;
+
+  /**
+   * Sets the audio ear monitoring format for the
+   * \ref agora::media::IAudioFrameObserver::onEarMonitoringAudioFrame "onEarMonitoringAudioFrame" callback.
+   *
+   * @param sampleRate Sets the sample rate (Hz) of the audio data returned in the `onEarMonitoringAudioFrame` callback,
+   * which can set be as 8000, 16000, 32000, 44100, or 48000.
+   * @param channel The number of channels of the audio data returned in the `onEarMonitoringAudioFrame` callback, which
+   * can be set as 1 or 2:
+   * - 1: Mono
+   * - 2: Stereo
+   * @param mode Deprecated. The use mode of the onEarMonitoringAudioFrame() callback:
+   * agora::rtc::RAW_AUDIO_FRAME_OP_MODE_TYPE.
+   * @param samplesPerCall not support. Sampling points in the called data returned in
+   * onEarMonitoringAudioFrame(). For example, it is usually set as 1024 for stream
+   * pushing.
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+  virtual int setEarMonitoringAudioFrameParameters(int sampleRate, int channel,
+                                                   RAW_AUDIO_FRAME_OP_MODE_TYPE mode,
+                                                   int samplesPerCall) = 0;
 
   /**
    * Sets the audio playback format before mixing in the
@@ -5650,8 +5677,8 @@ class IRtcEngine : public agora::base::IEngineBase {
    */
   virtual int setInEarMonitoringVolume(int volume) = 0;
 
-#if defined (_WIN32) || (defined(__linux__) && !defined(__ANDROID__))
-  virtual int loadExtensionProvider(const char* extension_lib_path) = 0;
+#if defined (_WIN32) || defined(__linux__) || defined(__ANDROID__)
+  virtual int loadExtensionProvider(const char* path, bool unload_after_use = false) = 0;
 #endif
 
   /**
@@ -6341,81 +6368,6 @@ class IRtcEngine : public agora::base::IEngineBase {
    * - < 0: Failure.
    */
   virtual int complain(const char* callId, const char* description) = 0;
-
-  /**
-   * Publishes the local stream to the CDN.
-   *
-   * This method call triggers the \ref IRtcEngineEventHandler::onRtmpStreamingStateChanged
-   * "onRtmpStreamingStateChanged" callback on the local client to report the state of adding
-   * a local stream to the CDN.
-   *
-   * @note
-   * - This method applies to the Live Broadcast profile only.
-   * - This method should be called after `joinChannel`.
-   * - Ensure that you enable the RTMP Converter service before using this function.
-   * See [Prerequisites](https://docs.agora.io/en/Interactive%20Broadcast/cdn_streaming_android?platform=Android#prerequisites)
-   * - This method adds only one stream URL each time it is called.
-   *
-   * @param url The CDN streaming URL in the RTMP format. The maximum length of this parameter is 1024
-   * bytes. The URL address must not contain special characters, such as Chinese language characters.
-   * @param transcodingEnabled Determines whether to enable transcoding. If you set this parameter as `true`,
-   * ensure that you call \ref setLiveTranscoding "setLiveTranscoding" before this method.
-   * - true: Enable transcoding, to transcode the audio or video streams when
-   * publishing them to CDN live, often used for combining the audio and video
-   * streams of multiple hosts in CDN live.
-   * - false: Disable transcoding.
-   *
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   *   - ERR_INVALID_ARGUMENT(2): Invalid parameter, usually because the URL address is null or the string
-   * length is 0.
-   *   - ERR_NOT_INITIALIZED(7): You have not initialized IRtcEngine when publishing the stream.
-   */
-  virtual int addPublishStreamUrl(const char* url, bool transcodingEnabled) = 0;
-
-  /**
-   * Removes an RTMP stream from the CDN.
-   *
-   * This method removes the RTMP URL address added by `addPublishStreamUrl` from a CDN live stream. The SDK
-   * reports the result of this method call in the \ref IRtcEngineEventHandler::onRtmpStreamingStateChanged
-   * "onRtmpStreamingStateChanged" callback.
-   * @note
-   * - This method applies to the Live Broadcast profile only.
-   * - This method should be called after `joinChannel`.
-   * - Ensure that you enable the RTMP Converter service before using this function.
-   * See [Prerequisites](https://docs.agora.io/en/Interactive%20Broadcast/cdn_streaming_android?platform=Android#prerequisites)
-   * - This method removes only one stream URL each time it is called.
-   *
-   * @param url The RTMP URL address to be removed. The maximum length of this parameter is 1024 bytes.
-   * The URL address must not contain special characters, such as Chinese language characters.
-   *
-   * @return
-   * - 0: Success.
-   * - < 0: Failure.
-   */
-  virtual int removePublishStreamUrl(const char* url) = 0;
-
-    /**
-     * Sets the video layout and audio settings for CDN live.
-     *
-     * The SDK triggers the \ref IRtcEngineEventHandler::onTranscodingUpdated "onTranscodingUpdated" callback when you call this method to update the `LiveTranscoding`class.
-     * If you call this method to set the `LiveTranscoding` class for the first time, the SDK does not trigger the `onTranscodingUpdated` callback.
-     *
-     * @note Before calling the methods listed in this section:
-     * - This method applies to Live Broadcast only.
-     * - Ensure that you enable the RTMP Converter service before using this function.
-     * See [Prerequisites](https://docs.agora.io/en/Interactive%20Broadcast/cdn_streaming_android?platform=Android#prerequisites).
-     * - Ensure that you call the `setClientRole` method and set the user role as the host.
-     * - Ensure that you call the `setLiveTranscoding` method before \ref addPublishStreamUrl "addPublishStreamUrl" method.
-     *
-     * @param transcoding Sets the CDN live audio and video transcoding settings: LiveTranscoding.
-     *
-     * @return
-     * - 0: Success.
-     * - < 0: Failure.
-     */
-  virtual int setLiveTranscoding(const LiveTranscoding& transcoding) = 0;
 
   /** Publishes the local stream without transcoding to a specified CDN live RTMP address.  (CDN live only.)
 
@@ -7262,13 +7214,13 @@ class IRtcEngine : public agora::base::IEngineBase {
   /**
    * @brief save current time video frame to jpeg and write as a jpeg
    *
-   * @param remoteUid save remote picture with user id. if remoteUid = 0 save local user's picture
+   * @param uid save remote picture with user id. if uid = 0 save local user's picture
    * @param filePath save file path
    * @return int
    * - 0 : Success.
    * - <0 : Failure.
    */
-  virtual int takeSnapshot(uid_t remoteUid, const char* filePath)  = 0;
+  virtual int takeSnapshot(uid_t uid, const char* filePath)  = 0;
     /** Enable the content inspect.
 
     @param media::ContentInspectConfig
@@ -7339,16 +7291,6 @@ class IRtcEngine : public agora::base::IEngineBase {
    */
   virtual int setLocalAccessPoint(const LocalAccessPointConfiguration& config) = 0;
 
-  /** enable fish correction. use this method before join channel.
-   *
-   * @param enabled bool
-   * @param params The FishCorrectionParams struct, See the definition of FishCorrectionParams for details.
-   *
-   * @return
-   * - 0: Success
-   * - < 0: Failure
-   */
-  virtual int enableFishCorrection(bool enabled, const FishCorrectionParams& params) = 0;
   /** set advanced audio options.
    @param options The AdvancedAudioOptions class, See the definition of AdvancedAudioOptions for details.
 
@@ -7381,7 +7323,7 @@ class IRtcEngine : public agora::base::IEngineBase {
   /*
    * Get monotonic time in ms which can be used by capture time,
    * typical scenario is as follows:
-   * 
+   *
    *  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
    *  |  // custom audio/video base capture time, e.g. the first audio/video capture time.             |
    *  |  int64_t custom_capture_time_base;                                                             |
@@ -7396,16 +7338,16 @@ class IRtcEngine : public agora::base::IEngineBase {
    *  |  int64_t actual_audio_capture_time = realtime_custom_audio_capture_time + offset;              |
    *  |  int64_t actual_video_capture_time = realtime_custom_video_capture_time + offset;              |
    *  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   * 
+   *
    * @return
    * - >= 0: Success.
    * - < 0: Failure.
    */
   virtual int64_t getCurrentMonotonicTimeInMs() = 0;
-  
-  /** 
+
+  /**
    * Turn WIFI acceleration on or off.
-   *    
+   *
    * @note
    * - This method is called before and after joining a channel.
    * - Users check the WIFI router app for information about acceleration. Therefore, if this interface is invoked, the caller accepts that the caller's name will be displayed to the user in the WIFI router application on behalf of the caller.
@@ -7432,7 +7374,7 @@ class IRtcEngine : public agora::base::IEngineBase {
   * - 6: MOBILE_5G.
   * - -1: UNKNOWN.
   */
-  
+
   virtual int getNetworkType() = 0;
 };
 

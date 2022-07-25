@@ -9,22 +9,6 @@
 
 #include "IAgoraRtcEngine.h"
 
-#ifndef OPTIONAL_ENUM_CLASS
-#if __cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER >= 1800)
-#define OPTIONAL_ENUM_CLASS enum class
-#else
-#define OPTIONAL_ENUM_CLASS enum
-#endif
-#endif
-
-#ifndef OPTIONAL_NULLPTR
-#if __cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER >= 1800)
-#define OPTIONAL_NULLPTR nullptr
-#else
-#define OPTIONAL_NULLPTR NULL
-#endif
-#endif
-
 namespace agora {
 namespace rtc {
 
@@ -72,8 +56,6 @@ class IRtcEngineEventHandlerEx : public IRtcEngineEventHandler {
   using IRtcEngineEventHandler::onFirstRemoteVideoDecoded;
   using IRtcEngineEventHandler::onVideoSizeChanged;
   using IRtcEngineEventHandler::onLocalVideoStateChanged;
-  using IRtcEngineEventHandler::onContentInspectResult;
-  using IRtcEngineEventHandler::onSnapshotTaken;
   using IRtcEngineEventHandler::onRemoteVideoStateChanged;
   using IRtcEngineEventHandler::onFirstRemoteVideoFrame;
   using IRtcEngineEventHandler::onUserJoined;
@@ -115,6 +97,7 @@ class IRtcEngineEventHandlerEx : public IRtcEngineEventHandler {
   using IRtcEngineEventHandler::onVideoSubscribeStateChanged;
   using IRtcEngineEventHandler::onAudioPublishStateChanged;
   using IRtcEngineEventHandler::onVideoPublishStateChanged;
+  using IRtcEngineEventHandler::onSnapshotTaken;
 
   virtual const char* eventHandlerType() const { return "event_handler_ex"; }
 
@@ -298,27 +281,6 @@ class IRtcEngineEventHandlerEx : public IRtcEngineEventHandler {
     (void)width;
     (void)height;
     (void)rotation;
-  }
-  /** Reports result of Content Inspect*/
-  virtual void onContentInspectResult(media::CONTENT_INSPECT_RESULT result) { (void)result; }
-    /** Occurs when takeSnapshot API result is obtained
-   *
-   *
-   * @brief snapshot taken callback
-   *
-   * @param connection RtcConnection
-   * @param remoteUid user id
-   * @param filePath image is saveed file path
-   * @param width image width
-   * @param height image height
-   * @param errCode 0 is ok negative is error
-   */
-  virtual void onSnapshotTaken(const RtcConnection& connection, uid_t remoteUid, const char* filePath, int width, int height, int errCode) {
-    (void)connection;
-    (void)filePath;
-    (void)width;
-    (void)height;
-    (void)errCode;
   }
   /** Occurs when the local video stream state changes
    *
@@ -810,7 +772,7 @@ class IRtcEngineEventHandlerEx : public IRtcEngineEventHandler {
   }
 
   /** Occurs when the WIFI message need be sent to the user.
-   * 
+   *
    * @param reason The reason of notifying the user of a message.
    * @param action Suggest an action for the user.
    * @param wlAccMsg The message content of notifying the user.
@@ -823,7 +785,7 @@ class IRtcEngineEventHandlerEx : public IRtcEngineEventHandler {
   }
 
   /** Occurs when SDK statistics wifi acceleration optimization effect.
-   * 
+   *
    * @param currentStats Instantaneous value of optimization effect.
    * @param averageStats Average value of cumulative optimization effect.
    */
@@ -868,6 +830,27 @@ class IRtcEngineEventHandlerEx : public IRtcEngineEventHandler {
     (void)connection;
     (void)remoteUid;
     (void)userAccount;
+  }
+
+  /** Occurs when takeSnapshot API result is obtained
+   *
+   *
+   * @brief snapshot taken callback
+   *
+   * @param connection The connection of the user ID
+   * @param channel channel name
+   * @param uid user id
+   * @param filePath image is saveed file path
+   * @param width image width
+   * @param height image height
+   * @param errCode 0 is ok negative is error
+   */
+  virtual void onSnapshotTaken(const RtcConnection& connection, uid_t uid, const char* filePath, int width, int height, int errCode) {
+    (void)uid;
+    (void)filePath;
+    (void)width;
+    (void)height;
+    (void)errCode;
   }
 };
 
@@ -1002,7 +985,7 @@ public:
     virtual int setRemoteVideoSubscriptionOptionsEx(uid_t uid, const VideoSubscriptionOptions& options, const RtcConnection& connection) = 0;
 
     virtual int setRemoteVoicePositionEx(uid_t uid, double pan, double gain, const RtcConnection& connection) = 0;
-  
+
     virtual int setRemoteUserSpatialAudioParamsEx(uid_t uid, const agora::SpatialAudioParams& params, const RtcConnection& connection) = 0;
 
     virtual int setRemoteRenderModeEx(uid_t uid, media::base::RENDER_MODE_TYPE renderMode,
@@ -1031,7 +1014,7 @@ public:
 
    /** Gets the user information by passing in the user account.
     *  It is same as agora::rtc::IRtcEngine::getUserInfoByUserAccount.
-    * 
+    *
     * @param userAccount The user account of the user. Ensure that you set this parameter.
     * @param [in,out] userInfo  A userInfo object that identifies the user:
     * - Input: A userInfo object.
@@ -1080,21 +1063,32 @@ public:
      * (high-resolution high-bitrate video stream) or low-stream (low-resolution low-bitrate video
      * stream) video using {@link setRemoteVideoStreamType setRemoteVideoStreamType}.
      *
-     * @param sourceType The video source type.
      * @param enabled
      * - true: Enable the dual-stream mode.
      * - false: (default) Disable the dual-stream mode.
      * @param streamConfig The minor stream config
      * @param connection An output parameter which is used to control different connection instances.
      */
-    virtual int enableDualStreamModeEx(VIDEO_SOURCE_TYPE sourceType, bool enabled, const SimulcastStreamConfig& streamConfig,
+    virtual int enableDualStreamModeEx(bool enabled, const SimulcastStreamConfig& streamConfig,
                                        const RtcConnection& connection) = 0;
+    /**
+     * Enables, disables or auto enable the dual video stream mode.
+     *
+     * If dual-stream mode is enabled, the subscriber can choose to receive the high-stream
+     * (high-resolution high-bitrate video stream) or low-stream (low-resolution low-bitrate video
+     * stream) video using {@link setRemoteVideoStreamType setRemoteVideoStreamType}.
+     *
+     * @param mode The dual stream mode
+     * @param streamConfig The minor stream config
+     * @param connection An output parameter which is used to control different connection instances.
+     */
+    virtual int setDualStreamModeEx(SIMULCAST_STREAM_MODE mode,
+                                   const SimulcastStreamConfig& streamConfig,
+                                   const RtcConnection& connection) = 0;
 
-    virtual int addPublishStreamUrlEx(const char* url, bool transcodingEnabled, const RtcConnection& connection) = 0;
-    
-    /** 
+    /**
      * Turn WIFI acceleration on or off.
-     *    
+     *
      * @note
      * - This method is called before and after joining a channel.
      * - Users check the WIFI router app for information about acceleration. Therefore, if this interface is invoked, the caller accepts that the caller's name will be displayed to the user in the WIFI router application on behalf of the caller.
@@ -1108,6 +1102,17 @@ public:
      * - < 0: Failure.
      */
     virtual int enableWirelessAccelerate(bool enabled) = 0;
+    /**
+     * @brief save current time video frame to jpeg and write as a jpeg
+     *
+     * @param connection The connection of the user ID
+     * @param uid save remote picture with user id. if uid = 0 save local user's picture
+     * @param filePath save file path
+     * @return int
+     * - 0 : Success.
+     * - <0 : Failure.
+     */
+    virtual int takeSnapshotEx(const RtcConnection& connection, uid_t uid, const char* filePath)  = 0;
 };
 
 }  // namespace rtc

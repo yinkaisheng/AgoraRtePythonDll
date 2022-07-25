@@ -115,11 +115,18 @@ void AgoraEventHandler::onLocalAudioStateChanged(LOCAL_AUDIO_STREAM_STATE state,
 	CALLBACK_BLOCK_END
 }
 
+#if AGORA_SDK_VERSION >= 50000000
+void AgoraEventHandler::onLocalVideoStateChanged(VIDEO_SOURCE_TYPE source, LOCAL_VIDEO_STREAM_STATE state, LOCAL_VIDEO_STREAM_ERROR error)
+#else
 void AgoraEventHandler::onLocalVideoStateChanged(LOCAL_VIDEO_STREAM_STATE state, LOCAL_VIDEO_STREAM_ERROR error)
+#endif
 {
 	CALLBACK_BLOCK_BEGIN
 
 	json js;
+#if AGORA_SDK_VERSION >= 50000000
+	js["source"] = source;
+#endif
 	js["state"] = state;
 	js["error"] = error;
 
@@ -128,11 +135,18 @@ void AgoraEventHandler::onLocalVideoStateChanged(LOCAL_VIDEO_STREAM_STATE state,
 	CALLBACK_BLOCK_END
 }
 
+#if AGORA_SDK_VERSION >= 50000000
+void AgoraEventHandler::onLocalVideoStats(VIDEO_SOURCE_TYPE source, const LocalVideoStats& stats)
+#else
 void AgoraEventHandler::onLocalVideoStats(const LocalVideoStats& stats)
+#endif
 {
 	CALLBACK_BLOCK_BEGIN
 
 	json js;
+#if AGORA_SDK_VERSION >= 50000000
+	js["source"] = source;
+#endif
 	js["codecType"] = stats.codecType;
 	js["encodedBitrate"] = stats.encodedBitrate;
 	js["encodedFrameCount"] = stats.encodedFrameCount;
@@ -212,12 +226,19 @@ void AgoraEventHandler::onRemoteVideoStats(const RemoteVideoStats& stats)
 	CALLBACK_BLOCK_END
 }
 
+#if AGORA_SDK_VERSION >= 50000000
+void AgoraEventHandler::onFirstLocalVideoFrame(VIDEO_SOURCE_TYPE source, int width, int height, int elapsed)
+#else
 void AgoraEventHandler::onFirstLocalVideoFrame(int width, int height, int elapsed)
+#endif
 {
     CALLBACK_BLOCK_BEGIN
 
     json js;
-    js["width"] = width;
+#if AGORA_SDK_VERSION >= 50000000
+	js["source"] = source;
+#endif
+	js["width"] = width;
     js["height"] = height;
     js["elapsed"] = elapsed;
 
@@ -226,12 +247,19 @@ void AgoraEventHandler::onFirstLocalVideoFrame(int width, int height, int elapse
     CALLBACK_BLOCK_END
 }
 
+#if AGORA_SDK_VERSION >= 50000000
+void AgoraEventHandler::onFirstLocalVideoFramePublished(VIDEO_SOURCE_TYPE source, int elapsed)
+#else
 void AgoraEventHandler::onFirstLocalVideoFramePublished(int elapsed)
+#endif
 {
     CALLBACK_BLOCK_BEGIN
 
     json js;
-    js["elapsed"] = elapsed;
+#if AGORA_SDK_VERSION >= 50000000
+	js["source"] = source;
+#endif
+	js["elapsed"] = elapsed;
 
     std::string jsonStr = js.dump(4);
 

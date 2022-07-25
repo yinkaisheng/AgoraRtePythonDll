@@ -49,43 +49,43 @@ enum AudioRoute
   /**
    * The headset.
    */
-  ROUTE_HEADSET,
+  ROUTE_HEADSET = 0,
   /**
    * The earpiece.
    */
-  ROUTE_EARPIECE,
+  ROUTE_EARPIECE = 1,
   /**
    * The headset with no microphone.
    */
-  ROUTE_HEADSETNOMIC,
+  ROUTE_HEADSETNOMIC = 2,
   /**
    * The speakerphone.
    */
-  ROUTE_SPEAKERPHONE,
+  ROUTE_SPEAKERPHONE = 3,
   /**
    * The loudspeaker.
    */
-  ROUTE_LOUDSPEAKER,
+  ROUTE_LOUDSPEAKER = 4,
   /**
    * The Bluetooth headset.
    */
-  ROUTE_HEADSETBLUETOOTH,
-  /**
-   * The HDMI
-   */
-  ROUTE_HDMI,
+  ROUTE_HEADSETBLUETOOTH = 5,
   /**
    * The USB
    */
-  ROUTE_USB,
+  ROUTE_USB = 6,
+  /**
+   * The HDMI
+   */
+  ROUTE_HDMI = 7,
   /**
    * The DISPLAYPORT
    */
-  ROUTE_DISPLAYPORT,
+  ROUTE_DISPLAYPORT = 8,
   /**
    * The AIRPLAY
    */
-  ROUTE_AIRPLAY
+  ROUTE_AIRPLAY = 9,
 };
 
 /**
@@ -195,11 +195,7 @@ enum CONTENT_INSPECT_RESULT {
   CONTENT_INSPECT_SEXY = 2,
   CONTENT_INSPECT_PORN = 3,
 };
-enum CONTENT_INSPECT_VENDOR { CONTENT_INSPECT_VENDOR_AGORA = 1, CONTENT_INSPECT_VENDOR_TUPU = 2, CONTENT_INSPECT_VENDOR_HIVE = 3 };
-enum CONTENT_INSPECT_DEVICE_TYPE{
-    CONTENT_INSPECT_DEVICE_INVALID = 0,
-    CONTENT_INSPECT_DEVICE_AGORA = 1
-};
+
 enum CONTENT_INSPECT_TYPE {
 /**
  * (Default) content inspect type invalid
@@ -215,48 +211,23 @@ CONTENT_INSPECT_MODERATION = 1,
 CONTENT_INSPECT_SUPERVISION = 2
 };
 
-enum CONTENT_INSPECT_WORK_TYPE {
-/**
- * video moderation on device
- */
-CONTENT_INSPECT_WORK_DEVICE = 0,
-/**
- * video moderation on cloud
- */
-CONTENT_INSPECT_WORK_CLOUD = 1,
-/**
- * video moderation on cloud and device
- */
-CONTENT_INSPECT_WORK_DEVICE_CLOUD = 2
-};
 struct ContentInspectModule {
   /**
    * The content inspect module type.
    */
   CONTENT_INSPECT_TYPE type;
-  CONTENT_INSPECT_VENDOR vendor;
-  const char* callbackUrl;
-  const char* token;
   /**The content inspect frequency, default is 0 second.
    * the frequency <= 0 is invalid.
    */
-  unsigned int frequency;
+  unsigned int interval;
   ContentInspectModule() {
     type = CONTENT_INSPECT_INVALID;
-    frequency = 0;
-    vendor = CONTENT_INSPECT_VENDOR_AGORA;
-    callbackUrl = NULL;
-    token = NULL;
+    interval = 0;
   }
 };
 /** Definition of ContentInspectConfig.
  */
 struct ContentInspectConfig {
-  /** video moderation work type.*/
-  CONTENT_INSPECT_WORK_TYPE ContentWorkType;
-
-  /**the type of video moderation on device.*/
-  CONTENT_INSPECT_DEVICE_TYPE DeviceworkType;
   const char* extraInfo;
 
   /**The content inspect modules, max length of modules is 32.
@@ -268,14 +239,12 @@ struct ContentInspectConfig {
   int moduleCount;
    ContentInspectConfig& operator=(const ContentInspectConfig& rth)
 	{
-        ContentWorkType = rth.ContentWorkType;
-        DeviceworkType = rth.DeviceworkType;
         extraInfo = rth.extraInfo;
         moduleCount = rth.moduleCount;
 		memcpy(&modules, &rth.modules,  MAX_CONTENT_INSPECT_MODULE_COUNT * sizeof(ContentInspectModule));
 		return *this;
 	}
-  ContentInspectConfig() :ContentWorkType(CONTENT_INSPECT_WORK_CLOUD),DeviceworkType(CONTENT_INSPECT_DEVICE_INVALID),extraInfo(NULL), moduleCount(0){}
+  ContentInspectConfig() :extraInfo(NULL), moduleCount(0){}
 };
 
 namespace base {
@@ -512,6 +481,25 @@ enum RENDER_MODE_TYPE {
    */
   RENDER_MODE_ADAPTIVE __deprecated = 3,
 };
+
+/**
+ * The video source type
+ */
+enum VIDEO_SOURCE_TYPE {
+  /**
+   * 0: the video frame comes from the front camera
+   */
+  CAMERA_SOURCE_FRONT = 0,
+  /**
+   * 1: the video frame comes from the back camera
+   */
+  CAMERA_SOURCE_BACK = 1,
+  /**
+   * 1: the video frame source is unsepcified
+   */
+  VIDEO_SOURCE_UNSPECIFIED = 2,
+};
+
 /**
  * The definition of the ExternalVideoFrame struct.
  */
@@ -875,6 +863,9 @@ class IAudioFrameObserverBase {
     /** The position for observing the audio of a single remote user before mixing
      */
     AUDIO_FRAME_POSITION_BEFORE_MIXING = 0x0008,
+    /** The position for observing the ear monitoring audio of the local user
+     */
+    AUDIO_FRAME_POSITION_EAR_MONITORING = 0x0010,
   };
 
   struct AudioParams {
@@ -938,6 +929,14 @@ class IAudioFrameObserverBase {
    * - false: The mixed audio data is invalid and is not encoded or sent.
    */
   virtual bool onMixedAudioFrame(const char* channelId, AudioFrame& audioFrame) = 0;
+  /**
+   * Occurs when the ear monitoring audio frame is received.
+   * @param audioFrame The reference to the audio frame: AudioFrame.
+   * @return
+   * - true: The ear monitoring audio data is valid and is encoded and sent.
+   * - false: The ear monitoring audio data is invalid and is not encoded or sent.
+   */
+  virtual bool onEarMonitoringAudioFrame(AudioFrame& audioFrame) = 0;
   /**
    * Occurs when the before-mixing playback audio frame is received.
    * @param channelId The channel name
@@ -1007,6 +1006,18 @@ class IAudioFrameObserverBase {
    @return Sets the audio format. See AgoraAudioParams.
    */
   virtual AudioParams getMixedAudioParams() = 0;
+
+  /** Sets the ear monitoring audio format
+   **Note**:
+   - The SDK calculates the sample interval according to the `AudioParams`
+   you set in the return value of this callback and triggers the
+   `onEarMonitoringAudioFrame` callback at the calculated sample interval.
+   Sample interval (seconds) = `samplesPerCall`/(`sampleRate` × `channel`).
+   Ensure that the value of sample interval is equal to or greater than 0.01.
+
+   @return Sets the audio format. See AgoraAudioParams.
+   */
+  virtual AudioParams getEarMonitoringAudioParams() = 0;
 };
 
 /**

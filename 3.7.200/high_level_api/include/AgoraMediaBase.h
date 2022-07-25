@@ -35,8 +35,7 @@ struct EncodedVideoFrameInfo;
 /**
  * Audio routes.
  */
-enum AudioRoute
-{
+enum AudioRoute {
   /**
    * -1: The default audio route.
    */
@@ -73,6 +72,15 @@ enum AudioRoute
    * The USB
    */
   ROUTE_USB
+};
+
+enum NLP_AGGRESSIVENESS {
+  NLP_NOT_SPECIFIED = 0,
+  NLP_MILD = 1,
+  NLP_NORMAL = 2,
+  NLP_AGGRESSIVE = 3,
+  NLP_SUPER_AGGRESSIVE = 4,
+  NLP_EXTREME = 5,
 };
 
 /**
@@ -482,6 +490,9 @@ struct ExternalVideoFrame {
   /**
    * The timestamp (ms) of the incoming video frame. An incorrect timestamp results in a frame loss or
    * unsynchronized audio and video.
+   * 
+   * Please refer to getAgoraCurrentMonotonicTimeInMs or getCurrentMonotonicTimeInMs
+   * to determine how to fill this filed.
    */
   long long timestamp;
   /**
@@ -712,6 +723,12 @@ class IAudioFrameObserverBase {
      * This parameter is the timestamp for audio rendering. Set it as 0.
      */
     int64_t renderTimeMs;
+
+    /**
+     * The custom-destined capture time for av sync.
+     */
+    int64_t captureTimeMs;
+
     int avsync_type;
 
     AudioFrame() : type(FRAME_TYPE_PCM16),
@@ -721,6 +738,7 @@ class IAudioFrameObserverBase {
                    samplesPerSec(0),
                    buffer(NULL),
                    renderTimeMs(0),
+                   captureTimeMs(0),
                    avsync_type(0) {}
   };
 
@@ -754,6 +772,14 @@ class IAudioFrameObserverBase {
    * - false: The mixed audio data is invalid and is not encoded or sent.
    */
   virtual bool onMixedAudioFrame(const char* channelId, AudioFrame& audioFrame) = 0;
+  /**
+   * Occurs when the ear monitoring audio frame is received.
+   * @param audioFrame The reference to the audio frame: AudioFrame.
+   * @return
+   * - true: The ear monitoring audio data is valid and is encoded and sent.
+   * - false: The ear monitoring audio data is invalid and is not encoded or sent.
+   */
+  virtual bool onEarMonitoringAudioFrame(AudioFrame& audioFrame) = 0;
   /**
    * Occurs when the before-mixing playback audio frame is received.
    * @param channelId The channel name
@@ -1138,7 +1164,7 @@ struct ContentInspectConfig {
   /**The content inspect module count.
    */
   int moduleCount;
-  ContentInspectConfig& operator=(ContentInspectConfig& rth)
+  ContentInspectConfig& operator=(const ContentInspectConfig& rth)
   {
     DeviceWork = rth.DeviceWork;
     CloudWork = rth.CloudWork;

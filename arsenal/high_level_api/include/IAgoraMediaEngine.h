@@ -5,11 +5,27 @@
 //
 #pragma once
 
-#include <stdint.h>
-#include "IAgoraRtcEngineEx.h"
+#include "AgoraBase.h"
+#include "AgoraMediaBase.h"
+#include "AgoraRefPtr.h"
 
 namespace agora {
 namespace media {
+
+/** dual-mono music output mode
+ */
+enum AUDIO_MIXING_DUAL_MONO_MODE {
+  /* 0: Original mode */
+  AUDIO_MIXING_DUAL_MONO_AUTO = 0,
+  /* 1: Left channel mode */
+  AUDIO_MIXING_DUAL_MONO_L = 1,
+  /* 2: Right channel mode */
+  AUDIO_MIXING_DUAL_MONO_R = 2,
+  /* 3: Mixed channel mode */
+  AUDIO_MIXING_DUAL_MONO_MIX = 3
+};
+
+
 /**
  * The IMediaEngine class.
  */
@@ -28,7 +44,7 @@ class IMediaEngine {
    * - < 0: Failure.
    */
   virtual int registerAudioFrameObserver(IAudioFrameObserver* observer) = 0;
-  /** 
+  /**
    * Registers a video frame observer object.
    *
    * @note
@@ -43,7 +59,7 @@ class IMediaEngine {
    */
   virtual int registerVideoFrameObserver(IVideoFrameObserver* observer) = 0;
 
-  /** 
+  /**
    * Registers a receiver object for the encoded video image.
    *
    * @note
@@ -58,7 +74,7 @@ class IMediaEngine {
    */
   virtual int registerVideoEncodedFrameObserver(IVideoEncodedFrameObserver* observer) = 0;
 
-  /** 
+  /**
    * Pushes the external audio data to the app.
    *
    * @param type deprecated.
@@ -77,7 +93,7 @@ class IMediaEngine {
   virtual int pushReverseAudioFrame(IAudioFrameObserver::AudioFrame* frame) = 0;
   /**
    * @brief Directly push audio frame to the rtc channel without mixing with other sources
-   * 
+   *
    * @param frame The audio data buffer
    * @return
    * - 0: Success.
@@ -91,9 +107,9 @@ class IMediaEngine {
    * After a successful method call, the app pulls the decoded and mixed audio data for playback.
    *
    * The difference between this method and the \ref onPlaybackAudioFrame "onPlaybackAudioFrame" is as follows:
-   * - `onPlaybackAudioFrame`: The SDK sends the audio data to the app once every 10 ms. Any delay in processing 
+   * - `onPlaybackAudioFrame`: The SDK sends the audio data to the app once every 10 ms. Any delay in processing
    * the audio frames may result in audio jitter.
-   * - `pullAudioFrame`: The app pulls the remote audio data. After setting the audio data parameters, the 
+   * - `pullAudioFrame`: The app pulls the remote audio data. After setting the audio data parameters, the
    * SDK adjusts the frame buffer and avoids problems caused by jitter in the external audio playback.
    *
    * @param frame The pointer to the audio frame: AudioFrame.
@@ -103,13 +119,13 @@ class IMediaEngine {
    */
   virtual int pullAudioFrame(IAudioFrameObserver::AudioFrame* frame) = 0;
 
-  /** 
+  /**
    * Sets the external video source.
    *
    * Once the external video source is enabled, the SDK prepares to accept the external video frame.
    *
    * @param enabled Determines whether to enable the external video source.
-   * - true: Enable the external video source. Once set, the SDK creates the external source and prepares 
+   * - true: Enable the external video source. Once set, the SDK creates the external source and prepares
    * video data from `pushVideoFrame` or `pushEncodedVideoImage`.
    * - false: Disable the external video source.
    * @param useTexture Determines whether to use textured video data.
@@ -127,7 +143,7 @@ class IMediaEngine {
       bool enabled, bool useTexture, EXTERNAL_VIDEO_SOURCE_TYPE sourceType = VIDEO_FRAME,
       rtc::SenderOptions encodedVideoOption = rtc::SenderOptions()) = 0;
 
-  /** 
+  /**
    * Sets the external audio source.
    *
    * @note
@@ -136,7 +152,7 @@ class IMediaEngine {
    * @param enabled Determines whether to enable the external audio source:
    * - true: Enable the external audio source.
    * - false: (default) Disable the external audio source.
-   * @param sampleRate The Sample rate (Hz) of the external audio source, which can set be as 
+   * @param sampleRate The Sample rate (Hz) of the external audio source, which can set be as
    * 8000, 16000, 32000, 44100, or 48000.
    * @param channels The number of channels of the external audio source, which can be set as 1 or 2:
    * - 1: Mono.
@@ -195,7 +211,7 @@ class IMediaEngine {
 
   /**
    * @brief Enable/Disable the direct external audio source
-   * 
+   *
    * @param enable Determines whether to enable the direct external audio source
    * @param localPlayback Determines whether to enable the local playback of the direct external audio source
    * @return int
@@ -204,7 +220,7 @@ class IMediaEngine {
    */
   virtual int setDirectExternalAudioSource(bool enable, bool localPlayback = false) = 0;
 
-  /** 
+  /**
    * Pushes the external video frame to the app.
    *
    * @param frame The external video frame: ExternalVideoFrame.
@@ -214,11 +230,11 @@ class IMediaEngine {
    */
   virtual int pushVideoFrame(base::ExternalVideoFrame* frame, unsigned int videoTrackId = 0) = 0;
 
-  /** 
+  /**
    * Pushes the encoded video image to the app.
    * @param imageBuffer A pointer to the video image.
    * @param length The data length.
-   * @param videoEncodedFrameInfo The reference to the information of the encoded video frame: 
+   * @param videoEncodedFrameInfo The reference to the information of the encoded video frame:
    * \ref agora::rtc::EncodedVideoFrameInfo "EncodedVideoFrameInfo".
    * @param videoTrackId The id of the video track.
    * - 0: Success.

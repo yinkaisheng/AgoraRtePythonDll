@@ -611,30 +611,6 @@ struct ScreenCaptureConfiguration {
   ScreenCaptureConfiguration() : isCaptureWindow(false), displayId(0) {}
 };
 
-struct AudioOptionsAdvanced {
-  Optional<bool> enable_aec_external_custom_;
-
-  Optional<bool> enable_aec_external_loopback_;
-
-  AudioOptionsAdvanced() {}
-
-  bool operator==(const AudioOptionsAdvanced& o) {
-#define BEGIN_COMPARE() bool b = true
-#define ADD_COMPARE(X) b = (b && (X == o.X))
-#define END_COMPARE()
-
-    BEGIN_COMPARE();
-    ADD_COMPARE(enable_aec_external_custom_);
-    ADD_COMPARE(enable_aec_external_loopback_);
-    END_COMPARE();
-
-#undef BEGIN_COMPARE
-#undef ADD_COMPARE
-#undef END_COMPARE
-    return b;
-  }
-};
-
 /**
  * The encoded video track options.
  */
@@ -903,10 +879,6 @@ struct ChannelMediaOptions {
    * The sender option for video encoded track.
    */
   EncodedVideoTrackOptions encodedVideoTrackOption;
-
-
-
-  AudioOptionsAdvanced audioOptionsAdvanced;
 
   ChannelMediaOptions() {}
   ~ChannelMediaOptions() {}
@@ -2419,6 +2391,31 @@ class IVideoDeviceManager {
    */
   virtual int getDevice(char deviceIdUTF8[MAX_DEVICE_ID_LENGTH]) = 0;
 
+#if defined(_WIN32) || (defined(__linux__) && !defined(__ANDROID__)) || \
+    (defined(__APPLE__) && TARGET_OS_MAC && !TARGET_OS_IPHONE)
+  /**
+   * Gets the capability number for a specified device.
+   *
+   * @param deviceIdUTF8 The pointer to the ID of the device in the UTF8 format.
+   *
+   * @return
+   * - The capability number of the device.
+   */
+  virtual int numberOfCapabilities(const char* deviceIdUTF8) = 0;
+
+  /**
+   * Gets the capability of capture device by index.
+   *
+   * @param deviceIdUTF8 ID of the video capture device.
+   * @param deviceCapabilityNumber index of available capabilities
+   * @param capability specific capability
+   *
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+  virtual int getCapability(const char* deviceIdUTF8, const uint32_t deviceCapabilityNumber, VideoFormat& capability) = 0;
+#endif
   /**
    * Starts the video capture device test.
    *
@@ -3340,7 +3337,7 @@ class IRtcEngine : public agora::base::IEngineBase {
    *
    * @param canvas The remote video view settings: VideoCanvas.
    * @return
-   *  
+   *
    *  VIRTUAL_BACKGROUND_SOURCE_STATE_REASON_SUCCESS = 0,
    *  VIRTUAL_BACKGROUND_SOURCE_STATE_REASON_IMAGE_NOT_EXIST = -1,
    *  VIRTUAL_BACKGROUND_SOURCE_STATE_REASON_COLOR_FORMAT_NOT_SUPPORTED = -2,
@@ -4069,6 +4066,7 @@ class IRtcEngine : public agora::base::IEngineBase {
    - < 0: Failure.
    */
   virtual int getAudioMixingCurrentPosition() = 0;
+
   /** Sets the playback position of the music file to a different starting
    position (the default plays from the beginning).
 
@@ -4079,6 +4077,19 @@ class IRtcEngine : public agora::base::IEngineBase {
    - < 0: Failure.
    */
   virtual int setAudioMixingPosition(int pos /*in ms*/) = 0;
+
+  /** In dual-channel music files, different audio data can be stored on the left and right channels.
+   * According to actual needs, you can set the channel mode as the original mode,
+   * the left channel mode, the right channel mode or the mixed mode
+
+   @param mode The mode of channel mode
+
+   @return
+   - 0: Success.
+   - < 0: Failure.
+   */
+  virtual int setAudioMixingDualMonoMode(int mode) = 0;
+
   /** Sets the pitch of the local music file.
    *
    * When a local music file is mixed with a local human voice, call this method to set the pitch of the local music file only.
@@ -4333,9 +4344,9 @@ class IRtcEngine : public agora::base::IEngineBase {
    - < 0: Failure.
    */
   virtual int setRemoteVoicePosition(uid_t uid, double pan, double gain) = 0;
-  
+
   /** enable spatial audio
-   
+
    @param enabled enable/disable spatial audio:
    - true: enable spatial audio.
    - false: disable spatial audio.
@@ -4344,12 +4355,12 @@ class IRtcEngine : public agora::base::IEngineBase {
    - < 0: Failure.
    */
   virtual int enableSpatialAudio(bool enabled) = 0;
-  
+
   /** Sets remote user parameters for spatial audio
-   
+
    @param uid The ID of the remote user.
    @param params spatial audio parameters
-   
+
    @return
    - 0: Success.
    - < 0: Failure.
@@ -5105,6 +5116,29 @@ class IRtcEngine : public agora::base::IEngineBase {
   virtual int setMixedAudioFrameParameters(int sampleRate, int channel, int samplesPerCall) = 0;
 
   /**
+   * Sets the audio ear monitoring format for the
+   * \ref agora::media::IAudioFrameObserver::onEarMonitoringAudioFrame "onEarMonitoringAudioFrame" callback.
+   *
+   * @param sampleRate Sets the sample rate (Hz) of the audio data returned in the `onEarMonitoringAudioFrame` callback,
+   * which can set be as 8000, 16000, 32000, 44100, or 48000.
+   * @param channel The number of channels of the audio data returned in the `onEarMonitoringAudioFrame` callback, which
+   * can be set as 1 or 2:
+   * - 1: Mono
+   * - 2: Stereo
+   * @param mode Deprecated. The use mode of the onEarMonitoringAudioFrame() callback:
+   * agora::rtc::RAW_AUDIO_FRAME_OP_MODE_TYPE.
+   * @param samplesPerCall not support. Sampling points in the called data returned in
+   * onEarMonitoringAudioFrame(). For example, it is usually set as 1024 for stream
+   * pushing.
+   * @return
+   * - 0: Success.
+   * - < 0: Failure.
+   */
+  virtual int setEarMonitoringAudioFrameParameters(int sampleRate, int channel,
+                                                   RAW_AUDIO_FRAME_OP_MODE_TYPE mode,
+                                                   int samplesPerCall) = 0;
+
+  /**
    * Sets the audio playback format before mixing in the
    * \ref agora::media::IAudioFrameObserver::onPlaybackAudioFrameBeforeMixing "onPlaybackAudioFrameBeforeMixing"
    * callback.
@@ -5699,9 +5733,6 @@ class IRtcEngine : public agora::base::IEngineBase {
     * - IScreenCaptureSourceList* a pointer to an instance of IScreenCaptureSourceList
     */
   virtual IScreenCaptureSourceList* getScreenCaptureSources(const SIZE& thumbSize, const SIZE& iconSize, const bool includeScreen) = 0;
-#endif // _WIN32 || (__APPLE__ && !TARGET_OS_IPHONE && TARGET_OS_MAC)
-
-#if (defined(__APPLE__) && TARGET_OS_MAC && !TARGET_OS_IPHONE)
 
   /** Shares the whole or part of a screen by specifying the display ID.
 
@@ -5728,7 +5759,7 @@ class IRtcEngine : public agora::base::IEngineBase {
   virtual int startScreenCaptureByDisplayId(uint32_t displayId, const Rectangle& regionRect,
                                             const ScreenCaptureParameters& captureParams) = 0;
 
-#endif  // __APPLE__ && TARGET_OS_MAC && !TARGET_OS_IPHONE
+#endif  // _WIN32 || __APPLE__ && TARGET_OS_MAC && !TARGET_OS_IPHONE
 
 #if defined(_WIN32)
 
@@ -6828,6 +6859,31 @@ class IRtcEngine : public agora::base::IEngineBase {
    * - < 0: Failure.
    */
   virtual int adjustCustomAudioPlayoutVolume(int32_t sourceId, int volume) = 0;
+
+  /*
+   * Get monotonic time in ms which can be used by capture time,
+   * typical scenario is as follows:
+   * 
+   *  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   *  |  // custom audio/video base capture time, e.g. the first audio/video capture time.             |
+   *  |  int64_t custom_capture_time_base;                                                             |
+   *  |                                                                                                |
+   *  |  int64_t agora_monotonic_time = getCurrentMonotonicTimeInMs();                                 |
+   *  |                                                                                                |
+   *  |  // offset is fixed once calculated in the begining.                                           |
+   *  |  const int64_t offset = agora_monotonic_time - custom_capture_time_base;                       |
+   *  |                                                                                                |
+   *  |  // realtime_custom_audio/video_capture_time is the origin capture time that customer provided.|
+   *  |  // actual_audio/video_capture_time is the actual capture time transfered to sdk.              |
+   *  |  int64_t actual_audio_capture_time = realtime_custom_audio_capture_time + offset;              |
+   *  |  int64_t actual_video_capture_time = realtime_custom_video_capture_time + offset;              |
+   *  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   * 
+   * @return
+   * - >= 0: Success.
+   * - < 0: Failure.
+   */
+  virtual int64_t getCurrentMonotonicTimeInMs() = 0;
 };
 
 class IRtcEngineParameter {
@@ -7019,6 +7075,9 @@ enum QUALITY_REPORT_FORMAT_TYPE {
 
 /** Media device states. */
 enum MEDIA_DEVICE_STATE_TYPE {
+  /** 0: The device is available
+   */
+  MEDIA_DEVICE_STATE_IDLE = 0,
   /** 1: The device is active.
    */
   MEDIA_DEVICE_STATE_ACTIVE = 1,

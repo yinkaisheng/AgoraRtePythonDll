@@ -1653,14 +1653,16 @@ struct EncodedAudioFrameInfo {
     : codec(AUDIO_CODEC_AACLC),
       sampleRateHz(0),
       samplesPerChannel(0),
-      numberOfChannels(0) {}
+      numberOfChannels(0),
+      captureTimeMs(0) {}
 
   EncodedAudioFrameInfo(const EncodedAudioFrameInfo& rhs)
     : codec(rhs.codec),
       sampleRateHz(rhs.sampleRateHz),
       samplesPerChannel(rhs.samplesPerChannel),
       numberOfChannels(rhs.numberOfChannels),
-      advancedSettings(rhs.advancedSettings) {}
+      advancedSettings(rhs.advancedSettings),
+      captureTimeMs(rhs.captureTimeMs) {}
   /**
    * The audio codec: #AUDIO_CODEC_TYPE.
    */
@@ -1683,6 +1685,11 @@ struct EncodedAudioFrameInfo {
    * The advanced settings of the audio frame.
    */
   EncodedAudioFrameAdvancedSettings advancedSettings;
+
+  /**
+   * This is a input parameter which means the timestamp for capturing the audio frame.
+   */
+  int64_t captureTimeMs;
 };
 /**
  * The definition of the AudioPcmDataInfo struct.
@@ -1753,22 +1760,15 @@ struct VideoSubscriptionOptions {
      * The default value is `VIDEO_STREAM_HIGH`, which means the high-quality
      * video stream.
      */
-    VIDEO_STREAM_TYPE type;
+    Optional<VIDEO_STREAM_TYPE> type;
     /**
      * Whether to subscribe to encoded video data only:
      * - `true`: Subscribe to encoded video data only.
      * - `false`: (Default) Subscribe to decoded video data.
      */
-    bool encodedFrameOnly;
+    Optional<bool> encodedFrameOnly;
 
-    VideoSubscriptionOptions() : type(VIDEO_STREAM_HIGH),
-                                 encodedFrameOnly(false) {}
-
-    explicit VideoSubscriptionOptions(VIDEO_STREAM_TYPE streamtype) : type(streamtype),
-                                                             encodedFrameOnly(false) {}
-
-    VideoSubscriptionOptions(VIDEO_STREAM_TYPE streamtype, bool encoded_only) : type(streamtype),
-                                                                                encodedFrameOnly(encoded_only) {}
+    VideoSubscriptionOptions() {}
 };
 
 /**
@@ -1783,8 +1783,7 @@ struct EncodedVideoFrameInfo {
       frameType(VIDEO_FRAME_TYPE_BLANK_FRAME),
       rotation(VIDEO_ORIENTATION_0),
       trackId(0),
-      renderTimeMs(0),
-      internalSendTs(0),
+      captureTimeMs(0),
       uid(0),
       streamType(VIDEO_STREAM_HIGH) {}
 
@@ -1796,8 +1795,7 @@ struct EncodedVideoFrameInfo {
       frameType(rhs.frameType),
       rotation(rhs.rotation),
       trackId(rhs.trackId),
-      renderTimeMs(rhs.renderTimeMs),
-      internalSendTs(rhs.internalSendTs),
+      captureTimeMs(rhs.captureTimeMs),
       uid(rhs.uid),
       streamType(rhs.streamType) {}
 
@@ -1810,8 +1808,7 @@ struct EncodedVideoFrameInfo {
     frameType = rhs.frameType;
     rotation = rhs.rotation;
     trackId = rhs.trackId;
-    renderTimeMs = rhs.renderTimeMs;
-    internalSendTs = rhs.internalSendTs;
+    captureTimeMs = rhs.captureTimeMs;
     uid = rhs.uid;
     streamType = rhs.streamType;
     return *this;
@@ -1850,22 +1847,9 @@ struct EncodedVideoFrameInfo {
                 // and additional payload for later implementation.
 
   /**
-   * The timestamp for rendering the video.
-   * 
-   * Attention that this parameter is just used in receiver side not sender side,
-   * thus it belongs to output.
-   * 
+   * This is a input parameter which means the timestamp for capturing the video.
    */
-  int64_t renderTimeMs;
-  /**
-   * Use this timestamp for audio and video sync. You can get this timestamp from
-   * the `OnEncodedVideoImageReceived` callback when `encodedFrameOnly` is `true`.
-   * 
-   * Attention that this parameter is just used in receiver side not sender side,
-   * thus it belongs to output.
-   * 
-   */
-  uint64_t internalSendTs;
+  int64_t captureTimeMs;
   /**
    * ID of the user.
    */
@@ -3191,6 +3175,10 @@ struct LocalAudioStats
    * The internal payload type
    */
   int internalCodec;
+  /**
+   * The audio delay of the device, contains record and playout delay
+   */
+  int audioDeviceDelay;
 };
 
 
@@ -4011,13 +3999,11 @@ struct SegmentationProperty {
   };
   
   SEG_MODEL_TYPE modelType;
-
-  int preferVelocity;
   
   float greenCapacity;
 
 
-  SegmentationProperty() : modelType(SEG_MODEL_AI), preferVelocity(1), greenCapacity(0.5){}
+  SegmentationProperty() : modelType(SEG_MODEL_AI), greenCapacity(0.5){}
 };
 
 
@@ -5326,3 +5312,28 @@ AGORA_API void setAgoraLicenseCallback(agora::base::LicenseCallback *callback);
  */
 
 AGORA_API agora::base::LicenseCallback* getAgoraLicenseCallback();
+
+/*
+ * Get monotonic time in ms which can be used by capture time,
+ * typical scenario is as follows:
+ * 
+ *  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ *  |  // custom audio/video base capture time, e.g. the first audio/video capture time.             |
+ *  |  int64_t custom_capture_time_base;                                                             |
+ *  |                                                                                                |
+ *  |  int64_t agora_monotonic_time = getAgoraCurrentMonotonicTimeInMs();                            |
+ *  |                                                                                                |
+ *  |  // offset is fixed once calculated in the begining.                                           |
+ *  |  const int64_t offset = agora_monotonic_time - custom_capture_time_base;                       |
+ *  |                                                                                                |
+ *  |  // realtime_custom_audio/video_capture_time is the origin capture time that customer provided.|
+ *  |  // actual_audio/video_capture_time is the actual capture time transfered to sdk.              |
+ *  |  int64_t actual_audio_capture_time = realtime_custom_audio_capture_time + offset;              |
+ *  |  int64_t actual_video_capture_time = realtime_custom_video_capture_time + offset;              |
+ *  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ * 
+ * @return
+ * - >= 0: Success.
+ * - < 0: Failure.
+ */
+AGORA_API int64_t getAgoraCurrentMonotonicTimeInMs();

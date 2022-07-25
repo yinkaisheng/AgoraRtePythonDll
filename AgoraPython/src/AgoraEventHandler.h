@@ -33,10 +33,18 @@ private:
 	void onUserJoined(uid_t uid, int elapsed) override;
 	void onUserOffline(uid_t uid, USER_OFFLINE_REASON_TYPE reason) override;
 	void onLocalAudioStateChanged(LOCAL_AUDIO_STREAM_STATE state, LOCAL_AUDIO_STREAM_ERROR error) override;
-	void onLocalVideoStateChanged(LOCAL_VIDEO_STREAM_STATE state, LOCAL_VIDEO_STREAM_ERROR error) override;
-	void onLocalVideoStats(const LocalVideoStats& stats) override;
+#if AGORA_SDK_VERSION >= 50000000
+	void onFirstLocalVideoFrame(VIDEO_SOURCE_TYPE source, int width, int height, int elapsed) override;
+	void onFirstLocalVideoFramePublished(VIDEO_SOURCE_TYPE source, int elapsed) override;
+	void onLocalVideoStateChanged(VIDEO_SOURCE_TYPE source, LOCAL_VIDEO_STREAM_STATE state, LOCAL_VIDEO_STREAM_ERROR error) override;
+	void onLocalVideoStats(VIDEO_SOURCE_TYPE source, const LocalVideoStats& stats) override;
+#else
 	void onFirstLocalVideoFrame(int width, int height, int elapsed) override;
 	void onFirstLocalVideoFramePublished(int elapsed) override;
+	void onLocalVideoStateChanged(LOCAL_VIDEO_STREAM_STATE state, LOCAL_VIDEO_STREAM_ERROR error) override;
+	void onLocalVideoStats(const LocalVideoStats& stats) override;
+#endif
+
 	void onFirstRemoteVideoDecoded(uid_t uid, int width, int height, int elapsed) override;
     //void onFirstRemoteVideoFrame(uid_t uid, int width, int height, int elapsed) override;//not suggested
 	void onRemoteAudioStateChanged(uid_t uid, REMOTE_AUDIO_STATE state, REMOTE_AUDIO_STATE_REASON reason, int elapsed) override;
